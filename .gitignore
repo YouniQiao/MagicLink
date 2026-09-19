@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+# 数据库是运行时数据，不入库。
+# 用通配而不是写死 magiclink.db —— 换 MAGICLINK_DB 指到别处时（比如 data/app.db）
+# 也得挡住，否则一不小心就把带真实数据的库提交了。
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+# 本地配置/凭据（GitCode client_secret 等）绝不入库
+.env
+.DS_Store
+# 编辑器 / 系统噪音
+.idea/
+.vscode/
+*.log

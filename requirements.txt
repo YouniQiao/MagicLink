@@ -1,0 +1,15 @@
+# MagicLink 直接依赖（都是实测通过的版本，钉死以便复现）
+#
+# 安装：
+#   uv pip install --python .venv/bin/python -r requirements.txt
+#   或者： .venv/bin/python -m pip install -r requirements.txt
+#
+# 没有 ORM、没有前端构建工具：SQLite 走标准库 sqlite3，前端是原生 ES Module。
+# 口令哈希也是标准库 hashlib.scrypt —— 依赖越少，部署时踩的坑越少。
+
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+httpx==0.28.1
+
+# 测试用（tests/ 里直接 import httpx，已在上面的依赖里）
+# 跑测试： ./tests/run_all.sh
