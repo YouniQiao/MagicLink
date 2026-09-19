@@ -50,10 +50,7 @@ function resetDrag() {
 // 版式跟公开页的 .pubcard 一致（同样的留白、图标框、标题字号），
 // 管理界面需要操作入口，所以在底部多一行：左边拖拽把手，右边操作按钮。
 export function appCard(item, opts = {}) {
-  const {
-    badges = [], actions = [], ownerName = '',
-    onVisibility = null, visibilityTitle = '可见性',
-  } = opts;
+  const { badges = [], actions = [], ownerName = '' } = opts;
 
   const fav = h('div', { class: 'favbox' });
   if (item.favicon) {
@@ -83,12 +80,9 @@ export function appCard(item, opts = {}) {
       onclick: (e) => { e.stopPropagation(); a.onClick(item); },
     }, icon(a.icon)));
   });
-  if (onVisibility) {
-    btns.push(h('button', {
-      class: 'iconbtn', title: visibilityTitle,
-      onclick: (e) => { e.stopPropagation(); onVisibility(item); },
-    }, icon('share')));
-  }
+  // 这里原先还有一个「可见性」快捷按钮（onVisibility / visibilityTitle）。
+  // 可见性后来并进了链接的编辑表单，卡片上那个按钮就没人再传参了 ——
+  // 参数和渲染分支一起删掉，别留一段永远不执行的代码。
 
   const foot = h('div', { class: 'cardfoot' },
     h('span', { class: 'grip', title: '拖动调整位置' }, icon('grip', 14)),

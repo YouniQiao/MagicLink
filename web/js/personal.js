@@ -217,8 +217,12 @@ export async function openLinkForm({ title, link = null, groups = [], groupId = 
 // 版式和公开页一致（都在 space.js 的 appCard 里），这里只负责个人空间的操作集。
 // 可见性已经并进「编辑」表单（链接信息 + 链接可见性），所以卡片上不再有单独的
 // 可见性按钮——同一个开关只留一个入口。
+//
+// onCopyToPersonal 只在团队空间传：把这条团队链接复制一份到我的个人空间。
+// （那条路以前只有接口没有入口，现在接上了。）
 export function linkCard(item, { onEdit, onDelete, editable = true,
-                                 deletable = true, badges = [] } = {}) {
+                                 deletable = true, badges = [],
+                                 onCopyToPersonal = null } = {}) {
   const shareCount = (item.shares || []).length;
   return appCard(item, {
     badges: [
@@ -238,7 +242,11 @@ export function linkCard(item, { onEdit, onDelete, editable = true,
     ],
     actions: [
       editable ? { icon: 'pencil', title: '编辑', onClick: onEdit } : null,
-      { icon: 'copy', title: '复制链接', onClick: copyUrl },
+      // 「复制链接地址」——拷 URL 到剪贴板。跟下面那个「复制到我的空间」是两件事，
+      // 标题里点明「地址」，否则两个都叫「复制…」分不出来。
+      { icon: 'copy', title: '复制链接地址', onClick: copyUrl },
+      onCopyToPersonal
+        ? { icon: 'import', title: '复制到我的空间', onClick: onCopyToPersonal } : null,
       deletable ? { icon: 'trash', title: '删除', danger: true, onClick: onDelete } : null,
     ],
   });

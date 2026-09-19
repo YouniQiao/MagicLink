@@ -238,6 +238,44 @@ export async function renderTeamSpace(teamId, q) {
     ? `团队公开页已开启：${location.origin}${team.public_url || ''}`
     : '⚠ 团队公开页还没开启，勾了也不会出现。拥有者可去「设置」里开启。';
 
+  // ── 把团队里的链接复制一份到我的个人空间 ──────────────────────────────────
+  // 跟「共享」不是一回事：共享是引用同一份（内容归本人维护，团队改了跟着变），
+  // 复制出来的**独立副本**归你、随便改，之后团队那边再改这份不会跟着动。
+  // 这个接口原先只有后端、没有入口，卡片上那个「来自团队复制」徽标因此永不出现。
+  async function openCopyToPersonal(it) {
+    // 个人分组要现拉：团队页只加载了团队分组，两边 id 空间不同，绝不能混用。
+    let myGroups = [];
+    try { myGroups = (await api.get('/api/local/groups')).items || []; }
+    catch { /* 拉不到就只给「未分组」 */ }
+
+    const gsel = h('select', { class: 'select' },
+      h('option', { value: '', text: '未分组' }),
+      ...myGroups.map((g) => h('option', { value: String(g.id), text: g.name })));
+
+    const m = modal({
+      title: '复制到我的空间',
+      sub: it.title || it.url,
+      body: h('div', null,
+        h('div', { class: 'field' }, h('label', { text: '放进哪个分组' }), gsel),
+        h('div', { class: 'hint',
+          text: '独立副本，归你所有、可随意改；团队那边之后再改，这份不会跟着变。' })),
+      actions: [
+        h('button', { class: 'btn', text: '取消', onclick: () => m.close() }),
+        h('button', {
+          class: 'btn primary', text: '复制',
+          onclick: async () => {
+            try {
+              await api.post(`/api/teams/${teamId}/links/${it.id}/copy-to-personal`,
+                             { group_id: gsel.value ? Number(gsel.value) : null });
+              m.close();
+              toastOk('已复制到我的空间');
+            } catch (e) { toastErr(e.message); }
+          },
+        }),
+      ],
+    });
+  }
+
   function teamCard(it) {
     const isShared = it.kind === 'shared';
     const owned = it.owner_id === state.me.id;
@@ -262,6 +300,7 @@ export async function renderTeamSpace(teamId, q) {
       badges,
       editable: it.can_edit,
       deletable: it.can_remove,
+      onCopyToPersonal: (item) => openCopyToPersonal(item),
       onEdit: (item) => {
         if (isShared && owned) {
           openLinkForm({
