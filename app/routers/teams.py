@@ -60,6 +60,8 @@ class TeamLinkReorderIn(BaseModel):
 
 class PublicIn(BaseModel):
     enabled: bool
+    # 自定义公开页地址；不传 = 保持原样，传空串 = 清掉（退回 /t/team-<id>）。
+    # 别在不传时写回 None —— 那样单纯开关总开关就会把人家设过的地址冲掉。
     slug: Optional[str] = Field(default=None, max_length=40)
 
 
@@ -203,7 +205,13 @@ def set_team_public(team_id: int, payload: PublicIn, user=Depends(get_current_us
                     conn: sqlite3.Connection = Depends(get_db)):
     """开启/关闭团队的对外公开页，并设置可读地址（拥有者）。"""
     _require_owner(conn, team_id, user["id"])
-    slug = (payload.slug or "").strip().lower() or None
+    current = conn.execute("SELECT public_slug FROM teams WHERE id = ?", (team_id,)).fetchone()
+    if current is None:
+        raise HTTPException(status_code=404, detail="团队不存在")
+    slug = current["public_slug"]
+    if payload.slug is not None:
+        # 传了才改；传空串 = 清掉自定义地址，退回 /t/team-<id>
+        slug = payload.slug.strip().lower() or None
     if slug is not None:
         if not valid_slug(slug):
             raise HTTPException(

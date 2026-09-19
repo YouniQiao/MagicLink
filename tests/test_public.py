@@ -116,6 +116,17 @@ def main():
     check("拥有者可以设置 200", r.status_code == 200, r.text[:120])
     check("地址为 /t/pub-team", r.json().get("public_url") == "/t/pub-team", str(r.json()))
 
+    # 开关只管开关：不带 slug 时不能把设好的地址冲掉（第三方调用最容易踩这个）
+    r = owner.post(f"/api/teams/{tid}/public", json={"enabled": False}).json()
+    check("关上时不带 slug 仍保留地址", r.get("public_slug") == "pub-team", str(r))
+    r = owner.post(f"/api/teams/{tid}/public", json={"enabled": True}).json()
+    check("再打开地址还在", r.get("public_url") == "/t/pub-team", str(r))
+    # 传空串才是清掉
+    r = owner.post(f"/api/teams/{tid}/public", json={"enabled": True, "slug": ""}).json()
+    check("传空串清掉地址 → 退回 team-<id>",
+          r.get("public_url") == f"/t/team-{tid}", str(r))
+    owner.post(f"/api/teams/{tid}/public", json={"enabled": True, "slug": "pub-team"})
+
     d = anon.get("/api/public/t/pub-team").json()
     titles = [l["title"] for gp in d["groups"] for l in gp["links"]]
     check("团队页匿名可见", d["total"] == 3, f"实际 {d['total']} 条: {titles}")
@@ -244,21 +255,30 @@ def main():
           member.post("/api/me/public",
                       json={"enabled": True, "slug": "my-links"}).status_code == 409)
     # 跟别人的用户名撞也会让对方的页面打不开，所以要挡。
-    # 注意要用「格式合法的用户名」来测：pub_owner 带下划线，会先被格式校验拦成 400，
-    # 根本走不到冲突检查那一步。
+    # 这个账号有两个讲究：
+    #   1. 必须是本文件自己的用户名。用 alice 会撞 test_api.py 建的那个，
+    #      而且那边把密码改成了 newpw123 —— 注册 400、登录 401，后面几步全跟着错。
+    #   2. 必须是「格式合法的 slug」（小写字母/数字/连字符）。pub_owner 带下划线，
+    #      会先被格式校验拦成 400，根本走不到冲突检查那一步。
     other = httpx.Client(base_url=BASE, timeout=20)
-    other.post("/api/auth/register", json={"username": "alice",
+    other.post("/api/auth/register", json={"username": "pub-alice",
                                            "password": "pw123456",
                                            "display_name": "爱丽丝"})
     if other.get("/api/me").status_code != 200:
-        other.post("/api/auth/login", json={"username": "alice", "password": "pw123456"})
+        other.post("/api/auth/login", json={"username": "pub-alice", "password": "pw123456"})
+    # 前置条件先钉住：身份没建立起来的话，下面几条会报成看不懂的 401
+    check("测试账号 pub-alice 已就位", other.get("/api/me").status_code == 200)
     check("跟别人的用户名重复 409",
           member.post("/api/me/public",
-                      json={"enabled": True, "slug": "alice"}).status_code == 409)
-    # 用自己的用户名也是可以的（等于把自定义地址清回用户名）
-    check("用自己的用户名可以",
+                      json={"enabled": True, "slug": "pub-alice"}).status_code == 409)
+    # 显式传 null 和不传一样 = 保持原样（不会因为客户端没有值就清掉地址）
+    check("传 null 也是保持原样",
           owner.post("/api/me/public",
-                     json={"enabled": True, "slug": None}).status_code == 200)
+                     json={"enabled": True, "slug": None}).json().get("public_slug") == "my-links")
+    # 把自己的用户名当自定义地址是允许的（等于什么都没改）
+    check("用自己原来的用户名可以",
+          other.post("/api/me/public",
+                     json={"enabled": True, "slug": "pub-alice"}).status_code == 200)
 
     # 清空 → 退回 /u/<用户名>
     r = owner.post("/api/me/public", json={"enabled": True, "slug": ""}).json()

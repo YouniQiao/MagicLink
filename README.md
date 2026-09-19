@@ -29,7 +29,8 @@ FastAPI + SQLite，前端原生 HTML/CSS/ES Module——**零构建、零前端�
 > 低于 3.10 就装一个新的（或者用 `uv venv`，它会自己挑一个合适的解释器）。
 
 ```bash
-git clone <仓库地址> MagicLink && cd MagicLink
+git clone https://github.com/YouniQiao/MagicLink.git MagicLink && cd MagicLink
+# 用 SSH 的话：git clone git@github.com:YouniQiao/MagicLink.git MagicLink
 
 uv venv .venv                                        # 自动选 3.10+ 的解释器
 uv pip install --python .venv/bin/python -r requirements.txt
@@ -270,7 +271,7 @@ GitCode 的 OAuth 端点、scope 都可覆盖（私有部署或测试打桩用�
 
 改地址**不会让老链接失效**——`/u/` 的解析顺序是「先按自定义地址找，再退回用户名」，所以分享出去的 `/u/<用户名>` 依然打得开。两条约束：不能和别人的地址重复，也不能**和别人的用户名重复**（否则会把对方页面顶掉）。
 
-接口上有一点要注意：`POST /api/me/public` 的 `slug` **不传 = 保持原样**，传空串才是清掉自定义地址。这样单纯开关总开关不会把已经设好的地址冲掉。
+接口上有一点要注意：`POST /api/me/public` 和 `POST /api/teams/{id}/public` 的 `slug` 都是**不传 = 保持原样**，传空串才是清掉自定义地址。这样单纯开关总开关不会把已经设好的地址冲掉 —— 前端本来就每次都带上 slug，但第三方调用（脚本、批量操作）不一定会带，那种时候把地址顺手清掉是很难发现的坑。
 
 **团队公开页收录哪些**：团队自有的公开链接 + 成员共享进团队空间且本人勾了公开的个人链接。
 没勾公开的一律不出现。
