@@ -64,6 +64,7 @@ const PATHS = {
   external: '<path d="M6.4 3.2H3.4v9.4h9.4v-3M9.2 3.2h3.6v3.6M12.8 3.2 7.4 8.6"/>',
   arrowl:   '<path d="M8 3.4 3.6 8 8 12.6M3.6 8h9.4"/>',
   bell:     '<path d="M4 6.6a4 4 0 0 1 8 0c0 3 1.2 4 1.2 4H2.8s1.2-1 1.2-4Z"/><path d="M6.6 12.4a1.6 1.6 0 0 0 2.8 0"/>',
+  help:     '<circle cx="8" cy="8" r="6.6"/><path d="M6.1 6a2 2 0 0 1 3.9.7c0 1.3-2 2-2 2"/><path d="M8 11.3h.01"/>',
   // 拖拽把手：六个圆点（stroke-linecap=round，所以极短的线段就是圆点）
   grip:     '<path d="M6 4h.01M6 8h.01M6 12h.01M10 4h.01M10 8h.01M10 12h.01"/>',
 };
@@ -184,13 +185,24 @@ export function brand({ href = '/', title = 'MagicLink' } = {}) {
 
 // 顶栏右上角的账号区：已登录显示用户名，未登录显示「登录」。
 // 三个顶栏都用它（公开页/首页 → /app，应用内 → 设置），只是跳转目标不同。
+//
+// 返回的是**一个包装节点**：账号区 + 右边的使用指南入口（问号）。
+// 挂在账号区里而不是各页面各写一遍 —— 四个顶栏（/app、首页、个人公开页、
+// 团队公开页）都用它，加在这儿四处的入口就都有了，不会「改了这边漏了那边」。
+// 注意必须包一层：顶栏是 justify-content: space-between，直接返回两个同级节点
+// 会把品牌、账号、问号三个摊开（问号飞到中间），包起来才是一组靠右。
 export function accountArea(user, { href = '/app', title = '进入 MagicLink' } = {}) {
-  if (user) {
-    return h('a', { class: 'userchip', href, title },
-      h('span', { class: 'avatar', text: initials(user.display_name) }),
-      h('span', { class: 'small', text: user.display_name }));
-  }
-  return h('a', { class: 'btn sm', href: '/app' }, '登录', icon('right'));
+  const chip = user
+    ? h('a', { class: 'userchip', href, title },
+        h('span', { class: 'avatar', text: initials(user.display_name) }),
+        h('span', { class: 'small', text: user.display_name }))
+    : h('a', { class: 'btn sm', href: '/app' }, '登录', icon('right'));
+  return h('div', { class: 'headacct' }, chip, helpLink());
+}
+
+// 使用指南入口：账号区右边的小问号
+export function helpLink({ href = '/help', title = '使用指南' } = {}) {
+  return h('a', { class: 'helplink', href, title }, icon('help', 16));
 }
 
 // 探当前会话。失败/未登录一律返回 null —— 公开页本身不需要登录，

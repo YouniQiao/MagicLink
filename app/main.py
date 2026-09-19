@@ -73,7 +73,14 @@ app.include_router(public.router)
 _HOME_PAGE = WEB_DIR / "home.html"
 _APP_PAGE = WEB_DIR / "index.html"
 _PUBLIC_PAGE = WEB_DIR / "public.html"
+_HELP_PAGE = WEB_DIR / "help.html"
 _IDENT = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+@app.get("/help", include_in_schema=False)
+def help_page() -> FileResponse:
+    """使用指南。公开可读 —— 没登录的人最需要它，所以不拦。"""
+    return FileResponse(_HELP_PAGE)
 
 
 @app.get("/", include_in_schema=False)

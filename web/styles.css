@@ -440,6 +440,7 @@ button.pill:hover { border-color: var(--line-strong); }
 .authswitch button { color: var(--accent); font-weight: 600; }
 .authback { text-align: center; margin-top: 18px; font-size: 12.5px; }
 .authback a { color: var(--muted); }
+.authback .authsep { color: var(--line-strong); margin: 0 7px; }
 .authback a:hover { color: var(--accent); }
 
 /* GitCode 登录入口 */
@@ -651,6 +652,153 @@ button.pill:hover { border-color: var(--line-strong); }
 /* 登录页右上角的「看公开空间」入口 */
 .topbar-link { color: var(--muted); font-size: 12.5px; }
 .topbar-link:hover { color: var(--accent); }
+
+/* ── 使用指南 ────────────────────────────────────────────────────────────────── */
+
+/* 顶栏右上角那一组：账号区 + 使用指南问号。
+   必须包一层 —— 顶栏是 space-between，不包的话问号会被摊到中间去。 */
+.headacct { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+/* 使用指南入口（小问号） */
+.helplink {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 999px;
+  color: var(--muted); background: var(--surface);
+  border: 1px solid var(--line);
+  transition: color .15s, border-color .15s;
+}
+.helplink:hover { color: var(--accent); border-color: var(--accent); }
+
+/* 指南正文：单栏文档，不是网格页，所以另给一个 780px 的宽度。
+   宽度和居中由外层 .helplayout 管，这里只管行宽。 */
+.helpdoc { max-width: 780px; }
+.helpdoc h1 {
+  font-size: 30px; font-weight: 680; letter-spacing: -.5px; margin: 0 0 10px;
+}
+.helpintro { color: var(--text-2); font-size: 14.5px; line-height: 1.8; margin: 0 0 22px; }
+.helpdoc h2 {
+  font-size: 19px; font-weight: 660; letter-spacing: -.2px;
+  margin: 40px 0 12px; padding-top: 20px; border-top: 1px solid var(--line);
+  /* 点目录跳过来时，标题别紧贴视口顶边 */
+  scroll-margin-top: 24px;
+}
+.helpdoc h3 { font-size: 14.5px; font-weight: 640; margin: 22px 0 8px; }
+.helpdoc p, .helpdoc li { font-size: 13.8px; line-height: 1.85; color: var(--text-2); }
+.helpdoc ul, .helpdoc ol { padding-left: 20px; margin: 8px 0; }
+.helpdoc li { margin-bottom: 5px; }
+.helpdoc strong { color: var(--text); font-weight: 620; }
+.helpdoc a { color: var(--accent); text-decoration: none; }
+.helpdoc a:hover { text-decoration: underline; }
+.helpdoc code {
+  font-family: var(--mono); font-size: 12.5px; color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--radius-xs); padding: 1px 5px;
+}
+.helpdoc pre.helpcode {
+  font-family: var(--mono); font-size: 12.5px; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 11px 14px; margin: 10px 0;
+  overflow-x: auto;
+}
+
+/* 左侧目录 + 正文的两栏。目录 sticky：正文滚它不动。
+   sticky 能不能生效取决于祖先链 —— .pub-wrap / body 上都不能有 overflow。 */
+.helplayout {
+  display: grid; grid-template-columns: 208px minmax(0, 1fr);
+  gap: 44px; align-items: start;
+  max-width: 1088px; margin: 0 auto;
+}
+.helpnav {
+  position: sticky; top: 24px;
+  max-height: calc(100vh - 48px); overflow-y: auto;
+  padding-bottom: 8px;
+}
+.helpnavhead {
+  font-size: 11.5px; font-weight: 620; color: var(--muted);
+  letter-spacing: .08em; padding: 0 12px 8px;
+}
+.helpnav a {
+  display: block; padding: 7px 12px; margin-bottom: 2px;
+  font-size: 13px; line-height: 1.45; color: var(--text-2);
+  border-left: 2px solid transparent; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  text-decoration: none;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.helpnav a:hover { color: var(--accent); background: var(--surface-2); text-decoration: none; }
+/* 滚动时高亮当前章节（help.js 的 scrollspy 加 .on） */
+.helpnav a.on {
+  color: var(--accent); background: var(--accent-soft);
+  border-left-color: var(--accent); font-weight: 600;
+}
+
+/* 返回顶部：固定在右下角，默认隐身，滚过一屏才显形。
+   用 visibility 而不是只靠 opacity —— 只加 opacity 的话它隐身了还能 Tab 到，
+   键盘用户会撞上一个看不见的按钮。 */
+.totop {
+  position: fixed; right: 24px; bottom: 24px; z-index: 30;
+  width: 40px; height: 40px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text-2);
+  border: 1px solid var(--line); box-shadow: var(--shadow-2);
+  cursor: pointer; padding: 0;
+  visibility: hidden; opacity: 0; transform: translateY(6px);
+  transition: opacity .18s, transform .18s, visibility .18s,
+              color .15s, border-color .15s;
+}
+.totop.on { visibility: visible; opacity: 1; transform: none; }
+.totop:hover { color: var(--accent); border-color: var(--accent); }
+.totop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 表格 */
+.helptable { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.2px; }
+.helptable th, .helptable td {
+  text-align: left; vertical-align: top; line-height: 1.7;
+  padding: 9px 12px; border-bottom: 1px solid var(--line);
+}
+.helptable th { font-weight: 620; color: var(--text); background: var(--surface-2); }
+.helptable td { color: var(--text-2); }
+.helptable code { font-size: 12px; }
+.helptable .muted { color: var(--muted); font-size: 12.5px; }
+
+.helpsteps { padding-left: 22px; }
+.helpnote {
+  background: var(--accent-soft); border: 1px solid #cfe6e2;
+  border-radius: var(--radius-sm); padding: 11px 14px; margin: 12px 0;
+}
+/* 浅青底上正文和链接都是深色，只靠色相分不出来 —— 这里的链接补下划线 */
+.helpnote a { text-decoration: underline; }
+.warnhead { color: var(--warn); }
+.helpfoot {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+  color: var(--muted); font-size: 12.5px;
+}
+.helpfoot code { font-size: 12px; }
+
+/* 窄屏：目录从左侧浮动退回正文上方的多列块。
+   降级成静态块而不是直接隐藏 —— 手机上更需要目录来跳章节。 */
+@media (max-width: 900px) {
+  .helplayout { grid-template-columns: 1fr; gap: 16px; max-width: 780px; }
+  .helpnav {
+    position: static; max-height: none; overflow: visible;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 4px; padding-bottom: 0;
+  }
+  .helpnavhead { grid-column: 1 / -1; padding-left: 2px; }
+  .helpnav a { border-left: none; border-radius: var(--radius-sm); padding: 7px 10px; }
+  .helpnav a.on { border-left: none; }
+}
+
+@media (max-width: 820px) {
+  .helpdoc h1 { font-size: 24px; }
+  .helpdoc h2 { font-size: 17px; }
+}
+
+@media (max-width: 560px) {
+  .totop { right: 14px; bottom: 14px; width: 38px; height: 38px; }
+}
+
 @media (max-width: 820px) {
   .pub-wrap { padding: 26px 16px 48px; }
   .pubname { font-size: 22px; }

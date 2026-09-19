@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#fafaf9" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>使用指南 · MagicLink</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:," />
+</head>
+<body class="pub help">
+  <div class="pub-wrap">
+    <!-- 顶栏由 js/help.js 填（要探一次会话才知道显示登录态还是「登录」）。
+         万一脚本挂了，正文照样能读 —— 所以正文写成静态 HTML，不靠 JS 渲染。 -->
+    <header class="pubhead" id="helptop"></header>
+
+    <div class="helplayout">
+      <!-- 左侧目录：sticky 跟随视口，正文滚动它不动。
+           窄屏（≤900px）会退回成正文上方的多列块，不会占满一屏。 -->
+      <nav class="helpnav" aria-label="目录">
+        <div class="helpnavhead">目录</div>
+        <a href="#start">五分钟上手</a>
+        <a href="#account">账号</a>
+        <a href="#personal">个人空间</a>
+        <a href="#team">团队空间</a>
+        <a href="#visible">一条链接会出现在哪些地方</a>
+        <a href="#public">对外公开页</a>
+        <a href="#perm">谁能改谁的</a>
+        <a href="#faq">常见问题</a>
+      </nav>
+
+      <article class="helpdoc">
+        <h1>使用指南</h1>
+        <p class="helpintro">
+          MagicLink 是一个自托管的链接管理站点：每个人的私人收藏，加上团队共享的空间，
+          再配一个不需要登录就能分享出去的公开页。这份指南按「你会想干什么」组织，
+          不涉及安装部署（那是部署者的事，见仓库里的 README）。
+        </p>
+
+      <!-- ── 五分钟上手 ─────────────────────────────────────────────── -->
+      <h2 id="start">五分钟上手</h2>
+      <ol class="helpsteps">
+        <li>打开 <code>/app</code>，用<strong>用户名 + 密码</strong>注册（昵称可以留空）。</li>
+        <li>左边选「<strong>我的链接</strong>」，点右上角「<strong>新建链接</strong>」，把网址粘进去 ——
+            标题和图标会自动抓取。抓不到就手动填，不影响保存。</li>
+        <li>想归类就选一个「分组」；还没有分组的话，在那里新建一个。</li>
+        <li>想让某个团队也看到它：同一个弹窗下半部分「<strong>链接可见性</strong>」里，
+            勾上那个团队的名字。</li>
+        <li>想要一个<strong>把链接发给别人、对方不用登录就能看</strong>的页面：
+            去「设置」把「对外公开页」打开。</li>
+      </ol>
+      <p class="helpnote">
+        第 4 步和第 5 步是<strong>互相独立</strong>的两件事，详见
+        <a href="#visible">一条链接会出现在哪些地方</a>。
+      </p>
+
+      <!-- ── 账号 ───────────────────────────────────────────────────── -->
+      <h2 id="account">账号</h2>
+
+      <h3>注册、登录、退出</h3>
+      <ul>
+        <li>注册和登录是<strong>同一个页面</strong>（<code>/app</code>），用下面的链接切换。
+            对着这个站点是<strong>开放自助注册</strong>的，不需要邀请。</li>
+        <li>密码至少 6 位。用户名用来登录，昵称是显示给别人看的名字。</li>
+        <li>退出按钮在「设置」页。</li>
+      </ul>
+
+      <h3>改密码 / 忘记密码</h3>
+      <p>
+        改密码在「设置 → 基本资料」。<strong>忘记密码没有自助入口</strong> ——
+        这里没接邮件通道，找回需要部署者在服务器上执行：
+      </p>
+      <pre class="helpcode">python manage.py reset-password &lt;用户名&gt;</pre>
+      <p>不加参数会交互式让你输入新密码，也可以 <code>-p 新密码</code> 直接指定。</p>
+
+      <h3>用 GitCode 账号登录（可选）</h3>
+      <p>
+        只有当<strong>部署者配置了 GitCode 凭据</strong>时，登录页和设置里才会出现相关入口；
+        没配置就完全没有这一项，也不影响用户名密码登录。绑定之后可以一键登录，不用再输密码。
+      </p>
+
+      <h3>设置里能改什么</h3>
+      <table class="helptable">
+        <thead><tr><th>这一块</th><th>能做什么</th></tr></thead>
+        <tbody>
+          <tr><td>基本资料</td><td>改昵称、改密码</td></tr>
+          <tr><td>GitCode 账号</td><td>绑定 / 解绑（部署方配了才有）</td></tr>
+          <tr><td>对外公开页</td><td>开关公开页，改公开页地址</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── 个人空间 ───────────────────────────────────────────────── -->
+      <h2 id="personal">个人空间</h2>
+      <p>「我的链接」是你的私人收藏。这里的东西默认只有你自己看得到，除非你主动共享或公开。</p>
+
+      <h3>新建、编辑、删除</h3>
+      <ul>
+        <li><strong>新建</strong>：粘贴网址后，标题和图标会自动抓取（抓取是访问一次那个网址）。
+            标题抓不到就用域名兜底，你随时可以改。</li>
+        <li><strong>备注</strong>是可选的，它也会参与搜索。</li>
+        <li><strong>编辑</strong>：卡片上的铅笔按钮。任何一条都能改。</li>
+        <li><strong>删除</strong>：卡片上的垃圾桶按钮，会先问你一次。</li>
+      </ul>
+
+      <h3>分组</h3>
+      <ul>
+        <li>分组是<strong>空间内部</strong>的结构，只影响这个空间的排列，不会变成侧边栏里的东西。</li>
+        <li>可以新建、重命名、删除，也能拖动调整顺序。</li>
+        <li>列表上方那排胶囊（<code>全部分组 | 未分组 | 组名 3</code>）用来筛选，
+            后面的数字是这一组里的链接数。</li>
+        <li>删除分组<strong>不会删掉里面的链接</strong>，它们只是变成「未分组」。</li>
+      </ul>
+
+      <h3>拖动排序</h3>
+      <p>
+        卡片左下角有拖拽把手，按住就能调整顺序；分组也能拖。顺序会<strong>同步到公开页</strong> ——
+        想让人先看到哪条，拖上去就行。
+      </p>
+
+      <h3>搜索</h3>
+      <p>个人空间的搜索框会匹配<strong>标题、网址、备注</strong>三样内容。</p>
+
+      <!-- ── 团队空间 ───────────────────────────────────────────────── -->
+      <h2 id="team">团队空间</h2>
+      <p>一个人可以属于多个团队。左边侧边栏里每个团队一项，后面的数字是成员人数。</p>
+
+      <h3>创建团队</h3>
+      <p>侧边栏底部「加入 / 创建团队」→「创建」，填个团队名称。创建者自动成为<strong>拥有者</strong>。</p>
+
+      <h3>用邀请码加入</h3>
+      <ul>
+        <li>每个团队有一个<strong>邀请码</strong>（10 位字母数字），向拥有者索取。</li>
+        <li>「加入 / 创建团队」→「加入」，把邀请码填进去。</li>
+        <li>拥有者可以在「团队设置」里<strong>重新生成</strong>邀请码：旧的立即失效，
+            <strong>已经加入的成员不受影响</strong>。</li>
+      </ul>
+
+      <h3>团队里的链接有两种来源</h3>
+      <table class="helptable">
+        <thead><tr><th>来源</th><th>卡片上会标</th><th>内容归谁维护</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>在团队空间里直接新建的<strong>团队链接</strong></td>
+            <td><code>由 谁 添加</code></td>
+            <td>团队</td>
+          </tr>
+          <tr>
+            <td>成员把自己个人空间的链接<strong>共享</strong>进来的</td>
+            <td><code>来自 谁</code></td>
+            <td><strong>本人</strong>（是同一份，改一处两边都变）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>成员</h3>
+      <p>
+        团队空间右上角「成员」能看到成员列表和各自的角色。拥有者可以把成员移出团队；
+        被移出的人<strong>贡献过的链接会留在团队里</strong>，不会跟着人走。
+      </p>
+
+      <h3>团队分组、团队搜索</h3>
+      <p>跟个人空间一样：分组可以建、可以拖、可以删；搜索匹配标题、网址、备注。</p>
+
+      <h3>删除团队</h3>
+      <p>
+        只有拥有者能删，在「团队设置」里。删除会一并移除<strong>团队链接</strong>和<strong>共享关系</strong>；
+        <strong>成员的个人链接不受影响</strong>，它们只是不再出现在这个团队里。
+      </p>
+
+      <!-- ── 可见性 ─────────────────────────────────────────────────── -->
+      <h2 id="visible">一条链接会出现在哪些地方</h2>
+      <p>
+        每一条链接有两个<strong>互相独立</strong>的去处，都在编辑弹窗的「链接可见性」里勾选，
+        没有隐藏状态、也不需要先满足什么条件：
+      </p>
+      <table class="helptable">
+        <thead><tr><th>勾选项</th><th>勾上之后</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>出现在对外公开页</strong><br /><span class="muted">不需要登录，任何人凭网址可看</span></td>
+            <td>这条链接会汇总到你的（或团队的）公开页上。前提是<strong>那个公开页的总开关也开着</strong> ——
+                总开关没开，勾了也不会出现，弹窗里会当场提示你。</td>
+          </tr>
+          <tr>
+            <td><strong>团队名</strong>（一个团队一行）<br /><span class="muted">出现在该团队的链接列表</span></td>
+            <td>它进入这个团队的共享空间，队友都能看到。勾上之后还可以选一个<strong>团队分组</strong>，
+                不选就是「团队内未分组」。</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="helpnote">
+        <strong>常见误解：</strong>把链接共享给团队 ≠ 它对公众可见。
+        共享只到团队为止；要让它出现在公开页上，得另外勾「出现在对外公开页」。
+        反过来说，一条链接也可以只公开、不共享给任何团队。
+      </p>
+
+      <!-- ── 公开页 ─────────────────────────────────────────────────── -->
+      <h2 id="public">对外公开页</h2>
+
+      <h3>三种公开页</h3>
+      <table class="helptable">
+        <thead><tr><th>页面</th><th>地址</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>链接广场</td><td><code>/</code></td>
+              <td>站点首页。把所有<strong>已开启</strong>的公开空间列成一个目录，谁都能看。</td></tr>
+          <tr><td>个人公开页</td><td><code>/u/&lt;地址&gt;</code></td>
+              <td>你个人空间里勾了「出现在对外公开页」的链接，按分组归类。</td></tr>
+          <tr><td>团队公开页</td><td><code>/t/&lt;地址&gt;</code></td>
+              <td>团队自有的公开链接 + 成员共享进来、并且本人勾了公开的链接。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>怎么开启</h3>
+      <ul>
+        <li><strong>个人公开页</strong>：「设置 → 对外公开页」打开开关。开启后<strong>仍然要逐条</strong>
+            把链接设为「对外公开」，开关本身不会替你决定哪些链接可见。</li>
+        <li><strong>团队公开页</strong>：「团队设置 → 对外公开页」，只有拥有者能改。</li>
+      </ul>
+
+      <h3>地址可以自定义</h3>
+      <ul>
+        <li>默认地址是<strong>你的用户名</strong>（个人）/ <code>team-&lt;编号&gt;</code>（团队）。
+            可以改成更好记的，比如 <code>sunxianlei</code>、<code>doc-team</code>。</li>
+        <li>规则：<strong>小写字母、数字、连字符</strong>，长度 2–40，不能以连字符开头或结尾。</li>
+        <li>不能和别人已用的地址重名，也<strong>不能和别人的用户名重名</strong>（那会让对方的页面打不开）。</li>
+        <li><strong>改了地址，老链接不会失效。</strong> 系统先按自定义地址找、找不到再退回用户名，
+            所以之前分享出去的 <code>/u/旧用户名</code> 照样打得开。</li>
+        <li>把地址填回空，就退回默认地址。</li>
+      </ul>
+
+      <h3>访客看到什么</h3>
+      <ul>
+        <li>不需要登录。页面顶部有搜索框（匹配标题、网址、备注）和分组筛选。</li>
+        <li>顺序<strong>跟你这边一致</strong> —— 你在个人空间拖出来的顺序，公开页上就是那个顺序。</li>
+        <li>内容<strong>实时同步</strong>：你改了标题，公开页刷新就是新的，不用重新发布。</li>
+        <li>每张卡片右下角有个复制按钮，一键复制这条链接的备注（没有备注的卡片不显示这个按钮）。</li>
+      </ul>
+
+      <h3 class="warnhead">⚠️ 公开页的隐私提醒</h3>
+      <ul>
+        <li>公开页默认带 <code>noindex</code>，<strong>不会被搜索引擎收录</strong>。
+            但这只是「请求不要收录」，不是访问控制。</li>
+        <li><strong>任何拿到网址的人都能看</strong>，不需要账号。页面本身就是给分享用的 ——
+            别往里放不该给外人看的东西（内部地址、带 token 的链接、个人信息）。</li>
+        <li>不想让它被看到了：把总开关关掉，或者取消那几条链接的「对外公开」勾选。
+            定期检查一下比事后补救省事。</li>
+      </ul>
+
+      <!-- ── 权限 ───────────────────────────────────────────────────── -->
+      <h2 id="perm">谁能改谁的</h2>
+      <p>团队里只有两种角色：<strong>拥有者</strong>（创建者）和<strong>普通成员</strong>。</p>
+      <table class="helptable">
+        <thead><tr><th>操作</th><th>拥有者</th><th>普通成员</th></tr></thead>
+        <tbody>
+          <tr><td>改 / 删自己添加的团队链接</td><td>✅</td><td>✅</td></tr>
+          <tr><td>改 / 删别人添加的团队链接</td><td>✅</td><td>❌</td></tr>
+          <tr><td>改 / 删自己共享进去的个人链接</td><td>✅</td><td>✅</td></tr>
+          <tr><td>改 / 删别人共享进去的个人链接</td><td>✅（可移出团队）</td><td>❌</td></tr>
+          <tr><td>团队设置、邀请码、团队公开页</td><td>✅</td><td>❌</td></tr>
+          <tr><td>移出成员</td><td>✅</td><td>❌</td></tr>
+          <tr><td>删除团队</td><td>✅</td><td>❌</td></tr>
+        </tbody>
+      </table>
+      <p class="helpnote">
+        共享进来的链接是<strong>引用</strong>，内容归本人维护 ——
+        所以别人（包括拥有者）不能改它的标题和网址，只能把它移出团队。
+      </p>
+
+      <!-- ── FAQ ────────────────────────────────────────────────────── -->
+      <h2 id="faq">常见问题</h2>
+
+      <h3>为什么我改不了某条链接？</h3>
+      <p>
+        两种可能：那是<strong>别人添加的团队链接</strong>，或者那是<strong>别人共享进来的个人链接</strong>。
+        这两类都只有本人（和团队拥有者）能动，见上一节。
+      </p>
+
+      <h3>为什么公开页上看不到某条链接？</h3>
+      <p>按顺序查三件事：</p>
+      <ol>
+        <li>这条链接<strong>勾了「出现在对外公开页」</strong>吗？</li>
+        <li>对应的<strong>公开页总开关</strong>开着吗？（个人在设置里，团队在团队设置里）</li>
+        <li>团队公开页的话，它还<strong>在团队里</strong>吗 —— 本人取消共享之后就撤下了。</li>
+      </ol>
+
+      <h3>我把公开页总开关关了，之前的勾选会丢吗？</h3>
+      <p>
+        不会。总开关只控制页面本身开不开，每条链接的「对外公开」勾选<strong>原样保留</strong>，
+        重新打开开关它们就又出现了。公开页地址也<strong>不会</strong>因为开关切换而被清掉。
+      </p>
+
+      <h3>想要的公开页地址提示被占用？</h3>
+      <p>换个别的。提示「和别人的用户名重复」时也一样 —— 因为默认地址就是用户名，
+          撞上了会让对方的页面打不开，所以系统会拦住。</p>
+
+      <h3>团队里某个成员不在了，他加的东西还在吗？</h3>
+      <p>
+        还在。把成员移出团队不会删掉他贡献的团队链接；删掉整个团队才会一起移除
+        （但成员<strong>自己个人空间</strong>里的链接始终不受影响）。
+      </p>
+
+      <h3>链接标题抓错了 / 抓不到？</h3>
+      <p>
+        有些站点会挡住抓取，或者本身就是个 JS 渲染的页面。直接手动填就行，
+        填什么就显示什么，之后随时能改。
+      </p>
+
+      <h3>我想把某条团队链接留一份到自己空间？</h3>
+      <p>
+        目前界面上没有这个按钮（后端接口已经在了，还没接到界面）。
+        临时办法：复制它的网址，在「我的链接」里新建一条。
+      </p>
+
+        <footer class="helpfoot">
+          <span>MagicLink · 使用指南</span>
+          <span>需要更多信息？仓库里的 <code>README.md</code> 讲的是安装部署和接口。</span>
+        </footer>
+      </article>
+    </div>
+  </div>
+
+  <!-- 返回顶部：默认隐身（CSS 里 opacity:0 + pointer-events:none），
+       滚过一屏才由 help.js 加 .on 显形。脚本挂了它就一直是隐的，不会挡着内容。 -->
+  <button id="totop" class="totop" type="button" title="返回顶部" aria-label="返回顶部">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 12.8V3.4M3.7 7.7 8 3.4l4.3 4.3"/>
+    </svg>
+  </button>
+  <script type="module" src="/js/help.js"></script>
+</body>
+</html>
