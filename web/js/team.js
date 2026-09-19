@@ -11,7 +11,7 @@ import {
   debounce,
   setChildren,
 } from './ui.js';
-import { state, layout, go, loadMe, loadGroups } from './app.js';
+import { state, layout, go, loadMe, loadGroups, publicLink } from './app.js';
 import { linkCard, pager, openLinkForm } from './personal.js';
 import { buildSpace } from './space.js';
 
@@ -189,7 +189,8 @@ export async function renderTeamSpace(teamId, q) {
     return layout({
       active: `t${teamId}`,
       title: team.name,
-      sub: `${team.member_count} 位成员 · ${team.link_count} 条团队链接 · ${team.shared_count} 条成员共享`,
+      sub: [`${team.member_count} 位成员 · ${team.link_count} 条团队链接 · ${team.shared_count} 条成员共享`,
+            publicLink(team.public_url)],
       actions,
       body: await membersPanel(teamId, team),
     });
@@ -198,7 +199,6 @@ export async function renderTeamSpace(teamId, q) {
   const groups = await api.get(`/api/teams/${teamId}/groups`).then((d) => d.items || []);
   const params = {
     q: q.get('q') || '',
-    tag: q.get('tag') || '',
     page: Number(q.get('page') || 1),
     page_size: 500,    // 分组展示要一次拿全，不然同一个分组会被分页切开
   };
@@ -231,7 +231,7 @@ export async function renderTeamSpace(teamId, q) {
     });
   }
 
-  const isFiltering = !!(params.q || params.tag || params.group_id || params.ungrouped);
+  const isFiltering = !!(params.q || params.group_id || params.ungrouped);
 
   // 团队链接的公开开关要知道团队公开页开没开，否则勾了也不生效
   const teamPublicHint = team.public_enabled
@@ -330,7 +330,7 @@ export async function renderTeamSpace(teamId, q) {
   searchIn.addEventListener('input', debounce(() => setParam({ q: searchIn.value.trim() })));
 
   const groupPills = groups.length
-    ? h('div', { class: 'tagbar' },
+    ? h('div', { class: 'pillbar' },
         h('button', {
           class: `pill ${!params.group_id && !params.ungrouped ? 'active' : ''}`,
           onclick: () => setParam({ g: null, ungrouped: null }),
@@ -393,7 +393,8 @@ export async function renderTeamSpace(teamId, q) {
   return layout({
     active: `t${teamId}`,
     title: team.name,
-    sub: `${team.member_count} 位成员 · ${team.link_count} 条团队链接 · ${team.shared_count} 条成员共享`,
+    sub: [`${team.member_count} 位成员 · ${team.link_count} 条团队链接 · ${team.shared_count} 条成员共享`,
+          publicLink(team.public_url)],
     actions: headActions,
     wide: true,
     body: h('div', null, toolbar, groupPills,

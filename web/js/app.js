@@ -75,9 +75,26 @@ export function layout({ active, title, sub, actions, body, hideSide = false,
           h('div', { class: 'page-head' },
             h('div', null,
               h('div', { class: 'page-title', text: title }),
-              sub ? h('div', { class: 'page-sub', text: sub }) : null),
+              // sub 既可以是字符串，也可以是数组 —— 空间页会把「公开页」胶囊缀在后面
+              sub ? h('div', { class: 'page-sub' }, sub) : null),
             actions ? h('div', { class: 'head-actions' }, actions) : null),
           body))));
+}
+
+// 空间页副标题后面缀的那个「公开页」胶囊。传进来的是接口给的路径
+// （`/u/xxx`、`/t/xxx`），没开总开关时接口返回 null，这里就什么都不渲染
+// （h() 会把 null 子节点过滤掉，所以直接放进 sub 数组即可）。
+// 拼完整地址用 location.origin：反代后面 uvicorn 推断不出对外域名。
+export function publicLink(path) {
+  if (!path) return null;
+  const url = path.startsWith('http') ? path : location.origin + path;
+  return h('a', {
+    class: 'publink', href: url, target: '_blank', rel: 'noopener noreferrer',
+    title: '在新标签页打开公开页',
+  },
+    h('span', { class: 'lbl', text: '公开页' }),
+    h('span', { class: 'url', text: url }),
+    icon('external', 12));
 }
 
 function topbar() {
@@ -286,18 +303,46 @@ async function settingsView() {
   const oldPw = h('input', { class: 'input', type: 'password', placeholder: '当前密码' });
   const newPw = h('input', { class: 'input', type: 'password', placeholder: '新密码（至少 6 位）' });
 
-  // 对外公开页：总开关 + 地址（地址就是 /u/<用户名>）
+  // 对外公开页：总开关 + 可自定义地址（默认 /u/<用户名>）
   function publicCard() {
     const enabled = !!u.public_enabled;
-    const url = `${location.origin}/u/${u.username}`;
+    const url = `${location.origin}${u.public_url || `/u/${u.username}`}`;
+    const slugIn = h('input', {
+      class: 'input', placeholder: `留空则用你的用户名 ${u.username}`,
+      value: u.public_slug || '',
+    });
+
+    // slug 只在输入框里有内容时提交；提交空串 = 清掉自定义地址，退回 /u/<用户名>
+    async function save(on) {
+      try {
+        await api.post('/api/me/public', { enabled: on, slug: slugIn.value.trim() || null });
+        await loadMe();
+        toastOk(on ? '已保存' : '已关闭对外公开页');
+        render();
+      } catch (e) { toastErr(e.message); }
+    }
+
     return h('div', { class: 'card pad' },
       h('div', { style: { fontWeight: '600', marginBottom: '6px' }, text: '对外公开页' }),
       h('div', { class: 'small muted', style: { marginBottom: '14px' },
         text: enabled
           ? '已开启。你标记了「对外公开」的链接会汇总到下面这个地址，不需要登录就能访问。'
           : '关闭中。开启后，你标记了「对外公开」的链接会汇总到一个不需要登录的页面上。' }),
+      h('div', { class: 'field' },
+        h('label', { text: '地址' }), slugIn,
+        h('div', { class: 'hint',
+          text: '只能用小写字母、数字和连字符（2-40 位）。改过之后，原来的 /u/用户名 也仍然能打开。' })),
+      h('div', { class: 'inline', style: { marginTop: '4px' } },
+        h('button', {
+          class: enabled ? 'btn' : 'btn primary',
+          onclick: () => save(!enabled),
+        }, enabled ? '关闭对外公开页' : '开启对外公开页'),
+        enabled ? h('button', { class: 'btn', onclick: () => save(true) }, '保存地址') : null,
+        enabled ? null : h('span', { class: 'small muted',
+          text: '开启后仍需逐条把链接设为「对外公开」。' })),
       enabled
-        ? h('div', { class: 'field' }, h('label', { text: '地址' }),
+        ? h('div', { class: 'field', style: { marginTop: '14px', marginBottom: '0' } },
+            h('label', { text: '公开地址' }),
             h('div', { class: 'inline' },
               h('span', { class: 'codechip', text: url }),
               h('button', {
@@ -309,21 +354,7 @@ async function settingsView() {
               }, '复制'),
               h('a', { class: 'btn sm', href: url, target: '_blank', rel: 'noopener' },
                 '打开', icon('external'))))
-        : null,
-      h('div', { class: 'inline', style: { marginTop: '4px' } },
-        h('button', {
-          class: enabled ? 'btn' : 'btn primary',
-          onclick: async () => {
-            try {
-              await api.post('/api/me/public', { enabled: !enabled });
-              await loadMe();
-              toastOk(enabled ? '已关闭对外公开页' : '已开启对外公开页');
-              render();
-            } catch (e) { toastErr(e.message); }
-          },
-        }, enabled ? '关闭对外公开页' : '开启对外公开页'),
-        enabled ? null : h('span', { class: 'small muted',
-          text: '开启后仍需逐条把链接设为「对外公开」。' })));
+        : null);
   }
 
   // GitCode 绑定：只有服务端配了凭据才有意义

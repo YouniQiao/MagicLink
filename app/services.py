@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from typing import Any, Optional
 
@@ -14,6 +15,15 @@ LINK_SELECT = (
 # 一路用 SQL 排好，Python 侧只在「合并两个来源」时用 sort_links() 复现同样的顺序。
 LINK_ORDER_BY = ("(g.position IS NULL), g.position, g.name, "
                  "l.position, l.updated_at DESC, l.id DESC")
+
+
+# 公开页地址：小写字母/数字/连字符，2-40 字符，不能以连字符开头/结尾。
+# 个人页和团队页共用这一套规则，所以放在这里（原来在 public.py，被 teams.py 跨 router 导入）。
+_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$")
+
+
+def valid_slug(slug: str) -> bool:
+    return bool(_SLUG_RE.match(slug or ""))
 
 
 def parse_tags(raw: str) -> list[str]:

@@ -15,17 +15,9 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..db import get_db
-from ..services import parse_tags
+from ..services import parse_tags, valid_slug
 
 router = APIRouter(prefix="/api/public", tags=["public"])
-
-_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$")
-
-
-def valid_slug(slug: str) -> bool:
-    """公开页地址：小写字母/数字/连字符，2-40 字符。"""
-    return bool(_SLUG_RE.match(slug or ""))
-
 
 def _link_out(row: sqlite3.Row) -> dict:
     try:
@@ -93,8 +85,13 @@ def _build(kind: str, name: str, rows, extra: dict | None = None) -> dict:
 
 @router.get("/u/{username}")
 def public_personal(username: str, conn: sqlite3.Connection = Depends(get_db)):
-    u = conn.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE",
+    # 先按自定义地址找，再退回用户名 —— 这样改过地址之后，
+    # 之前分享出去的 /u/<用户名> 老链接依然打得开。
+    u = conn.execute("SELECT * FROM users WHERE public_slug = ?",
                      (username,)).fetchone()
+    if not u:
+        u = conn.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE",
+                         (username,)).fetchone()
     if not u:
         raise HTTPException(status_code=404, detail="没有这个用户")
     if not u["public_enabled"]:
@@ -108,8 +105,11 @@ def public_personal(username: str, conn: sqlite3.Connection = Depends(get_db)):
         "WHERE l.owner_user_id = ? AND l.team_id IS NULL AND l.public_show = 1",
         (u["id"],)).fetchall()
 
+    # slug 给的是这个页面当前的规范地址（自定义过就是自定义的，否则是用户名），
+    # 和团队公开页返回 slug 对称。
     return _build("personal", u["display_name"] or u["username"], rows,
-                  {"username": u["username"]})
+                  {"username": u["username"],
+                   "slug": u["public_slug"] or u["username"]})
 
 
 @router.get("/t/{slug}")
@@ -213,7 +213,7 @@ def directory(conn: sqlite3.Connection = Depends(get_db)):
 
     people = []
     for row in conn.execute(
-            "SELECT id, username, display_name FROM users "
+            "SELECT id, username, display_name, public_slug FROM users "
             "WHERE public_enabled = 1 ORDER BY display_name, username").fetchall():
         st = people_stat.get(row["id"])
         if not st:
@@ -223,7 +223,7 @@ def directory(conn: sqlite3.Connection = Depends(get_db)):
             "id": row["id"],
             "name": row["display_name"] or row["username"],
             "username": row["username"],
-            "url": f"/u/{row['username']}",
+            "url": f"/u/{row['public_slug'] or row['username']}",
             "link_count": st["count"],
             "tags": st["tags"][:4],
             "updated_at": st["updated"],

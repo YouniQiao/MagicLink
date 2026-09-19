@@ -22,8 +22,7 @@ function spaceCard(s) {
       h('div', { class: 'spacesub',
         text: isTeam ? `由 ${s.owner_name} 维护` : `@${s.username}` }),
       h('div', { class: 'spacemeta' },
-        h('span', { class: 'spacecount', text: `${s.link_count} 条链接` }),
-        ...(s.tags || []).map((t) => h('span', { class: 'tag', text: t })))),
+        h('span', { class: 'spacecount', text: `${s.link_count} 条链接` }))),
   );
 }
 

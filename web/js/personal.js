@@ -10,13 +10,13 @@ import {
   debounce,
   setChildren,
 } from './ui.js';
-import { state, layout, go, loadGroups, loadMe, promptNewGroup } from './app.js';
+import { state, layout, go, loadGroups, loadMe, promptNewGroup, publicLink } from './app.js';
 import { appCard, buildSpace } from './space.js';
 
 // ── 链接表单（个人 / 团队通用）──────────────────────────────────────────────
 // 两段式：上「链接信息」，下「链接可见性」。可见性不再单独开一个弹窗——
 // 一条链接会出现在哪些地方，就在建它/改它的地方一次说完。
-// 标签没有输入框了：已有标签不会被抹掉（编辑时不提交这个字段），卡片和筛选里照旧显示。
+// 标签已经没有入口，界面上也不再显示；编辑时不提交这个字段，已有数据不会被抹掉。
 export async function openLinkForm({ title, link = null, groups = [], groupId = null,
                                      teamId = null, publicHint = '', onSaved }) {
   const isEdit = !!link;
@@ -117,7 +117,8 @@ export async function openLinkForm({ title, link = null, groups = [], groupId = 
     const pubState = h('div', { class: 'hint', style: { marginLeft: '24px' } });
     function paintPubState() {
       if (state.me?.public_enabled) {
-        const u = `${location.origin}/u/${state.me.username}`;
+        // 用接口给的地址（可能自定义过），别自己拼 /u/<用户名>
+        const u = `${location.origin}${state.me.public_url || `/u/${state.me.username}`}`;
         setChildren(pubState, '你的公开页已开启：',
           h('a', { href: u, target: '_blank', rel: 'noopener' }, u));
       } else {
@@ -222,11 +223,14 @@ export function linkCard(item, { onEdit, onDelete, editable = true,
   return appCard(item, {
     badges: [
       shareCount
-        ? h('span', { class: 'pill accent' }, icon('users', 12), `${shareCount} 个团队列表`)
+        // 不带小人图标：这两个字文案已经说清楚了，图标只是占宽度。
+        // 而且这一行原本就卡着线（194px / 可用 197px），多两个字就会翻成两行。
+        ? h('span', { class: 'pill accent' }, `在 ${shareCount} 个团队列表`)
         : null,
       item.public_show
+        // 同样不带图标：文字已经说明白了
         ? h('span', { class: 'pill pub', title: '对外公开：不需要登录，任何人凭网址可看' },
-            icon('external', 12), '对外公开')
+            '对外公开')
         : null,
       item.copied_from_link_id
         ? h('span', { class: 'pill warn', text: '来自团队复制' }) : null,
@@ -260,7 +264,6 @@ export async function renderPersonalSpace(q) {
   const groups = state.groups;
   const params = {
     q: q.get('q') || '',
-    tag: q.get('tag') || '',
     page: Number(q.get('page') || 1),
     page_size: 500,     // 分组展示要一次拿全，不然同一个分组会被分页切开
   };
@@ -306,7 +309,7 @@ export async function renderPersonalSpace(q) {
     });
   }
 
-  const isFiltering = !!(params.q || params.tag || params.group_id || params.ungrouped);
+  const isFiltering = !!(params.q || params.group_id || params.ungrouped);
 
   function buildList(data) {
     const empty = h('div', { class: 'empty' },
@@ -346,7 +349,7 @@ export async function renderPersonalSpace(q) {
   }
 
   const searchIn = h('input', {
-    class: 'input', placeholder: '搜索标题 / 链接 / 备注 / 标签', value: params.q,
+    class: 'input', placeholder: '搜索标题 / 链接 / 备注', value: params.q,
   });
   searchIn.addEventListener('input', debounce(() => setParam({ q: searchIn.value.trim() })));
 
@@ -360,7 +363,7 @@ export async function renderPersonalSpace(q) {
   // 分组筛选挪进页面里（和团队空间一样）：分组是空间内部的结构，
   // 不再占侧边栏的位置。点一个分组 = 只看那一组，再点一次取消。
   const groupPills = groups.length
-    ? h('div', { class: 'tagbar' },
+    ? h('div', { class: 'pillbar' },
         h('button', {
           class: `pill ${!params.group_id && !params.ungrouped ? 'active' : ''}`,
           onclick: () => setParam({ g: null, ungrouped: null }),
@@ -373,18 +376,6 @@ export async function renderPersonalSpace(q) {
           class: `pill ${params.group_id === g.id ? 'active' : ''}`,
           onclick: () => setParam({ g: params.group_id === g.id ? null : g.id, ungrouped: null }),
         }, icon('folder', 12), `${g.name} ${g.link_count}`)))
-    : null;
-
-  const tagbar = current.tags?.length
-    ? h('div', { class: 'tagbar' },
-        h('button', {
-          class: `pill ${params.tag ? '' : 'active'}`,
-          onclick: () => setParam({ tag: null }),
-        }, '全部标签'),
-        ...current.tags.map((t) => h('button', {
-          class: `pill ${params.tag === t ? 'active' : ''}`,
-          onclick: () => setParam({ tag: params.tag === t ? null : t }),
-        }, `#${t}`)))
     : null;
 
   const headActions = [
@@ -433,10 +424,10 @@ export async function renderPersonalSpace(q) {
   return layout({
     active: 'space',
     title: '我的空间',
-    sub,
+    sub: [sub, publicLink(state.me?.public_url)],   // 没开公开页时 publicLink 返回 null，被过滤掉
     actions: headActions,
     wide: true,
-    body: h('div', null, toolbar, groupPills, tagbar,
+    body: h('div', null, toolbar, groupPills,
       h('div', { id: 'space-list' },
         buildList(current), pager(current, (p) => setParam({ page: p })))),
   });

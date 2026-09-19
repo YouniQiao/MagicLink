@@ -3,7 +3,6 @@
 import {
   h,
   icon,
-  hostOf,
   debounce,
   brand,
   accountArea,
@@ -39,23 +38,63 @@ function linkCard(it) {
     ? h('img', { src: it.favicon, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer',
                  onerror: (e) => { e.target.style.display = 'none'; } })
     : icon('link');
+
+  // 「复制备注」按钮。整张卡是一个 <a>，所以这里有两个坎：
+  //   1. 必须自己掐断事件（preventDefault + stopPropagation），否则点它会顺带打开链接；
+  //   2. 用 <span role="button"> 而不是 <button> —— <a> 的内容模型不允许出现交互内容，
+  //      浏览器虽然能渲染，但嵌套本身是不合法的。
+  // 反馈不用 toast：公开页没有 #toast-root（那是主应用才有的），会直接报错。
+  // 改成图标自己翻成对勾，顺带能看出到底复制的是哪一张卡。
+  let copyBtn = null;
+  let timer = null;
+
+  function flash(ok) {
+    if (!copyBtn) return;
+    copyBtn.classList.toggle('done', ok);
+    setChildren(copyBtn, icon(ok ? 'check' : 'x', 14));
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      copyBtn.classList.remove('done');
+      setChildren(copyBtn, icon('copy', 14));
+    }, 1400);
+  }
+
+  async function copyNote() {
+    try {
+      await navigator.clipboard.writeText(it.description);
+      flash(true);
+    } catch {
+      flash(false);   // 非安全上下文（纯 http 的非 localhost）下会走到这里
+    }
+  }
+
+  if (it.description) {
+    copyBtn = h('span', {
+      class: 'pubcopy', role: 'button', tabindex: '0', title: '复制备注',
+      onclick: (e) => { e.preventDefault(); e.stopPropagation(); copyNote(); },
+      onkeydown: (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault(); e.stopPropagation(); copyNote();
+        }
+      },
+    }, icon('copy', 14));
+  }
+
   return h('a', {
     class: 'pubcard', href: it.url, target: '_blank', rel: 'noopener noreferrer',
-    title: it.description || it.title || it.url,
   },
     h('div', { class: 'favbox' }, fav),
     h('div', { class: 'pubmain' },
       h('div', { class: 'pubtitle' },
         h('span', { class: 'label', text: it.title || it.url }), icon('external')),
       it.description ? h('div', { class: 'pubdesc', text: it.description }) : null,
-      h('div', { class: 'pubmeta' },
-        h('span', { class: 'pubhost', text: hostOf(it.url) }),
-        ...(it.tags || []).map((t) => h('span', { class: 'tag', text: t })))),
+      // 没有备注可复制时（也就没有按钮）整行不渲染，免得留一条空行
+      copyBtn ? h('div', { class: 'pubmeta' }, copyBtn) : null),
   );
 }
 
 function render(data, user) {
-  const state = { q: '', tag: '' };
+  const state = { q: '' };
   const list = h('div', { class: 'publist' });
 
   function paint() {
@@ -64,7 +103,6 @@ function render(data, user) {
       .map((g) => ({
         ...g,
         links: g.links.filter((it) => {
-          if (state.tag && !(it.tags || []).includes(state.tag)) return false;
           if (!q) return true;
           const hay = [it.title, it.url, it.description, (it.tags || []).join(' ')]
             .join(' ').toLowerCase();
@@ -85,43 +123,19 @@ function render(data, user) {
             h('div', { class: 'pubgrid' }, ...g.links.map(linkCard)))))
         : h('div', { class: 'empty' },
             h('div', { class: 't', text: data.total ? '没有匹配的链接' : '还没有公开的链接' }),
-            h('div', { text: data.total ? '换个关键词或标签试试。'
+            h('div', { text: data.total ? '换个关键词试试。'
               : '对方还没有把链接设为「对外公开」。' })),
     );
-    counter.textContent = state.q || state.tag
+    counter.textContent = state.q
       ? `筛选出 ${shown} / ${data.total} 条`
       : `共 ${data.total} 条`;
-    syncPills();
   }
 
-  const searchIn = h('input', { class: 'input', placeholder: '搜索标题、网址、标签' });
+  const searchIn = h('input', { class: 'input', placeholder: '搜索标题、网址、备注' });
   searchIn.addEventListener('input', debounce(() => { state.q = searchIn.value.trim(); paint(); }));
 
   // 条数跟着搜索框走（筛选时它会变成「筛选出 X / Y 条」），不占顶栏
   const counter = h('span', { class: 'small muted pubcount' });
-  const tagbar = data.tags.length
-    ? h('div', { class: 'tagbar' },
-        h('button', { class: 'pill', dataset: { tag: '' }, text: '全部' }),
-        ...data.tags.map((t) => h('button', { class: 'pill', dataset: { tag: t }, text: t })))
-    : null;
-
-  function syncPills() {
-    if (!tagbar) return;
-    [...tagbar.children].forEach((b) =>
-      b.classList.toggle('active', (b.dataset.tag || '') === state.tag));
-  }
-
-  if (tagbar) {
-    tagbar.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      const t = btn.dataset.tag || '';
-      state.tag = state.tag === t ? '' : t;   // 再点一次取消
-      syncPills();
-      paint();
-    });
-  }
-
   setChildren(app, 
     h('header', { class: 'pubhead' },
       h('div', { class: 'pubheadtop' },
@@ -133,7 +147,6 @@ function render(data, user) {
     h('div', { class: 'pubbartools' },
       h('div', { class: 'search' }, icon('search'), searchIn),
       counter),
-    tagbar,
     list,
     h('footer', { class: 'pubfoot' },
       h('span', { text: '由 MagicLink 生成 · 内容更新会实时同步' })),

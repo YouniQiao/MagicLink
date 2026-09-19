@@ -207,6 +207,65 @@ def main():
     check("总数与两段内容一致",
           d["total"] == len(d["teams"]) + len(d["people"]), str(d["total"]))
 
+    # ── 9. 个人公开页可以自定义地址 ──────────────────────────────────────────
+    print()
+    print("=== 9. 个人公开页自定义地址 ===")
+
+    r = owner.post("/api/me/public", json={"enabled": True, "slug": "my-links"}).json()
+    check("设了地址后 public_url 用它", r.get("public_url") == "/u/my-links", str(r))
+    check("public_slug 回填", r.get("public_slug") == "my-links", str(r))
+    check("公开页返回的 slug 也换了",
+          anon.get("/api/public/u/my-links").json().get("slug") == "my-links")
+
+    # 老地址仍然可用 —— 改地址不该让已经分享出去的链接失效
+    check("旧的 /u/<用户名> 依然能打开", anon.get("/api/public/u/pub_owner").status_code == 200)
+
+    # 目录里也用新地址
+    ppl = {p["username"]: p for p in anon.get("/api/public/directory").json()["people"]}
+    check("目录条目用新地址", ppl.get("pub_owner", {}).get("url") == "/u/my-links",
+          str(ppl.get("pub_owner", {}).get("url")))
+
+    # 只切开关、不带 slug → 不该把设好的地址冲掉
+    r = owner.post("/api/me/public", json={"enabled": False}).json()
+    check("关闭时不带 slug 仍保留地址", r.get("public_slug") == "my-links", str(r))
+    r = owner.post("/api/me/public", json={"enabled": True}).json()
+    check("再开启地址还在", r.get("public_url") == "/u/my-links", str(r))
+
+    # 校验
+    check("非法地址 400",
+          owner.post("/api/me/public", json={"enabled": True, "slug": "Bad_Slug"}).status_code == 400)
+    check("太短 400",
+          owner.post("/api/me/public", json={"enabled": True, "slug": "a"}).status_code == 400)
+    check("连字符开头 400",
+          owner.post("/api/me/public", json={"enabled": True, "slug": "-abc"}).status_code == 400)
+
+    # 被别的用户占用
+    check("别人用过的地址 409",
+          member.post("/api/me/public",
+                      json={"enabled": True, "slug": "my-links"}).status_code == 409)
+    # 跟别人的用户名撞也会让对方的页面打不开，所以要挡。
+    # 注意要用「格式合法的用户名」来测：pub_owner 带下划线，会先被格式校验拦成 400，
+    # 根本走不到冲突检查那一步。
+    other = httpx.Client(base_url=BASE, timeout=20)
+    other.post("/api/auth/register", json={"username": "alice",
+                                           "password": "pw123456",
+                                           "display_name": "爱丽丝"})
+    if other.get("/api/me").status_code != 200:
+        other.post("/api/auth/login", json={"username": "alice", "password": "pw123456"})
+    check("跟别人的用户名重复 409",
+          member.post("/api/me/public",
+                      json={"enabled": True, "slug": "alice"}).status_code == 409)
+    # 用自己的用户名也是可以的（等于把自定义地址清回用户名）
+    check("用自己的用户名可以",
+          owner.post("/api/me/public",
+                     json={"enabled": True, "slug": None}).status_code == 200)
+
+    # 清空 → 退回 /u/<用户名>
+    r = owner.post("/api/me/public", json={"enabled": True, "slug": ""}).json()
+    check("传空串清掉自定义地址", r.get("public_url") == "/u/pub_owner", str(r))
+    check("清掉后 /u/<用户名> 正常", anon.get("/api/public/u/pub_owner").status_code == 200)
+    check("清掉后旧的自定义地址失效", anon.get("/api/public/u/my-links").status_code == 404)
+
     print()
     print("=" * 46)
     print(f"结果: {PASS} passed, {FAIL} failed")

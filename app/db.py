@@ -61,6 +61,7 @@ def init_db() -> None:
 _MIGRATIONS = [
     ("users", "public_enabled", "INTEGER NOT NULL DEFAULT 0"),
     ("users", "gitcode_id", "TEXT"),
+    ("users", "public_slug", "TEXT"),
     ("teams", "public_enabled", "INTEGER NOT NULL DEFAULT 0"),
     ("teams", "public_slug", "TEXT"),
     ("links", "public_show", "INTEGER NOT NULL DEFAULT 0"),

@@ -129,8 +129,29 @@ ul { margin: 0; padding: 0; list-style: none; }
 .wrap.wide { max-width: 1560px; }
 .page-head { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
 .page-title { font-size: 21px; font-weight: 660; letter-spacing: -.2px; }
-.page-sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
+/* 副标题那一行。默认就是纯文字；空间页会在后面缀上「公开页」胶囊，
+   所以要能换行、并按行内元素垂直居中。 */
+.page-sub {
+  color: var(--muted); font-size: 13px; margin-top: 3px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+}
 .head-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+/* 空间页副标题下面那行「公开页」入口（只在开了总开关时渲染）。
+   inline-flex 让它按内容收缩；长网址用省略号收尾，不撑破 head。 */
+.publink {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px 3px 10px; border-radius: 999px;
+  background: var(--surface-2); font-size: 12px; max-width: 100%;
+  transition: background .15s;
+}
+.publink .lbl { color: var(--muted); flex: 0 0 auto; }
+.publink .url {
+  color: var(--accent); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.publink .ico { flex: 0 0 auto; color: var(--muted); }
+.publink:hover { background: var(--accent-soft); }
+.publink:hover .url { text-decoration: underline; }
 /* 危险操作（删除分组等）与常规操作留出间距，降低误触 */
 .head-actions .btn.danger { margin-left: 6px; }
 
@@ -176,9 +197,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .check input { accent-color: var(--accent); width: 15px; height: 15px; }
 
 .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
-.tagbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
-/* 分组筛选和标签筛选是两行连续的筛选条，贴紧一点，别各留一份 16px 间距 */
-.tagbar + .tagbar { margin-top: -10px; }
+/* 筛选胶囊那一行。现在只装分组筛选（标签筛选已撤掉），所以叫 pillbar 不叫 tagbar */
+.pillbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
 
 .pill {
   display: inline-flex; align-items: center; gap: 5px;
@@ -188,17 +208,14 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 button.pill:hover { border-color: var(--line-strong); }
 .pill.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); font-weight: 600; }
-/* 筛选标签的选中态要一眼看得出来，不能和未选中的浅色胶囊混淆 */
-.tagbar .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+/* 筛选胶囊的选中态要一眼看得出来，不能和未选中的浅色胶囊混淆 */
+.pillbar .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .pill.accent { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .pill.warn { background: #fdf6e7; color: var(--warn); }
 /* 对外公开用第三种色，和「共享到团队」(绿)、「来自团队复制」(橙) 区分开 */
 .pill.pub { background: #f1f0fd; color: #5b4bdb; }
-/* 分组是「分类」，标签是「标注」——两者要一眼分得开。
-   分组：描边胶囊 + 文件夹图标；标签：纯文字、弱化色。 */
+/* 分组是「分类」：描边胶囊 + 文件夹图标 */
 .pill.grp { background: var(--surface); border-color: var(--line-strong); color: var(--text-2); }
-.tag { font-size: 12px; color: var(--muted); }
-.tag::before { content: '#'; opacity: .55; margin-right: 1px; }
 
 /* ── 卡片 / 列表 ────────────────────────────────────────────────────────── */
 .card {
@@ -551,7 +568,26 @@ button.pill:hover { border-color: var(--line-strong); }
 .pubmeta {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px;
 }
-.pubhost { color: var(--muted); font-size: 12px; }
+
+/* 卡片上刻意不再显示域名/网址的任何形式（常显的、悬停浮出的都不做）：
+   它旁边就是「复制备注」按钮，两者挨在一起会让人以为复制的是那个链接。
+   想确认一条卡片指向哪，用浏览器自己的机制即可 —— 悬停链接时左下角的状态栏
+   会显示完整地址，右键也有「复制链接地址」；它们离卡片很远，不会造成误解。 */
+
+/* 卡片右下角的「复制备注」按钮，一个纯图标。
+   margin-left: auto 把它顶到这一行的最右端（也就是卡片右下角）。
+   始终可见（只在悬停出现的话触屏没法用），但保持低对比、不抢内容。
+   尺寸固定 24×24、图标固定 14px：复制成功时只换图标和颜色，不跳。 */
+.pubcopy {
+  margin-left: auto; flex: 0 0 auto;
+  width: 24px; height: 24px; border-radius: var(--radius-xs);
+  display: grid; place-items: center;
+  color: var(--muted); user-select: none; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.pubcopy:hover { background: var(--surface-2); color: var(--text); }
+.pubcopy.done { color: var(--accent); }
+.pubcopy:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .pubfoot {
   margin-top: 46px; padding-top: 18px; border-top: 1px solid var(--line);
   color: var(--muted); font-size: 12px; text-align: center;

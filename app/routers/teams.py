@@ -16,7 +16,7 @@ from ..services import (LINK_ORDER_BY, LINK_SELECT, dump_tags, get_group, get_li
                         parse_tags,
                         serialize_link, sort_links)
 from .local import LinkIn, LinkPatch, ReorderIn
-from .public import valid_slug
+from ..services import valid_slug
 
 router = APIRouter(prefix="/api/teams", tags=["teams"])
 

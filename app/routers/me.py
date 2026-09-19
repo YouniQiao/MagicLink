@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -10,6 +11,7 @@ from ..config import gitcode_enabled
 from ..db import get_db
 from ..deps import get_current_user, user_public
 from ..security import NO_PASSWORD, hash_password, verify_password
+from ..services import valid_slug
 
 router = APIRouter(prefix="/api/me", tags=["me"])
 
@@ -39,7 +41,9 @@ def me(user=Depends(get_current_user), conn: sqlite3.Connection = Depends(get_db
         # （比如 GitCode 是否已配置）也必须挂在 user 下，否则前端拿不到。
         "user": {**user_public(user),
                  "public_enabled": bool(user["public_enabled"]),
-                 "public_url": f"/u/{user['username']}" if user["public_enabled"] else None,
+                 "public_slug": user["public_slug"],
+                 "public_url": f"/u/{user['public_slug'] or user['username']}"
+                               if user["public_enabled"] else None,
                  "gitcode_bound": bool(user["gitcode_id"]),
                  "gitcode_login_enabled": gitcode_enabled(),
                  "has_password": user["password_hash"] != NO_PASSWORD},
@@ -49,20 +53,43 @@ def me(user=Depends(get_current_user), conn: sqlite3.Connection = Depends(get_db
 
 class PublicIn(BaseModel):
     enabled: bool
+    # 自定义公开页地址；不传 = 保持原样（别再写回 None 把人家设过的地址清掉）
+    slug: Optional[str] = Field(default=None, max_length=40)
 
 
 @router.post("/public")
 def set_my_public(payload: PublicIn, user=Depends(get_current_user),
                   conn: sqlite3.Connection = Depends(get_db)):
-    """开启/关闭我自己的对外公开页（地址就是 /u/<用户名>）。"""
-    conn.execute("UPDATE users SET public_enabled = ? WHERE id = ?",
-                 (1 if payload.enabled else 0, user["id"]))
+    """开启/关闭我自己的对外公开页，并可自定义地址（默认 /u/<用户名>）。"""
+    row = conn.execute("SELECT username, public_enabled, public_slug FROM users WHERE id = ?",
+                       (user["id"],)).fetchone()
+    slug = row["public_slug"]
+    if payload.slug is not None:
+        # 传了才改；传空串 = 清掉自定义地址，退回 /u/<用户名>
+        slug = payload.slug.strip().lower() or None
+        if slug is not None:
+            if not valid_slug(slug):
+                raise HTTPException(
+                    status_code=400,
+                    detail="地址只能用小写字母、数字和连字符，长度 2-40，且不能以连字符开头/结尾")
+            if conn.execute("SELECT 1 FROM users WHERE public_slug = ? AND id <> ?",
+                            (slug, user["id"])).fetchone():
+                raise HTTPException(status_code=409, detail="这个地址已被别人占用")
+            # 也别跟别人的用户名撞：/u/<用户名> 是默认地址，撞了会让对方的页面打不开
+            if conn.execute("SELECT 1 FROM users WHERE username = ? COLLATE NOCASE AND id <> ?",
+                            (slug, user["id"])).fetchone():
+                raise HTTPException(status_code=409, detail="这个地址和别人的用户名重复了")
+
+    conn.execute("UPDATE users SET public_enabled = ?, public_slug = ? WHERE id = ?",
+                 (1 if payload.enabled else 0, slug, user["id"]))
     conn.commit()
-    row = conn.execute("SELECT username, public_enabled FROM users WHERE id = ?",
+    row = conn.execute("SELECT username, public_enabled, public_slug FROM users WHERE id = ?",
                        (user["id"],)).fetchone()
     return {
         "public_enabled": bool(row["public_enabled"]),
-        "public_url": f"/u/{row['username']}" if row["public_enabled"] else None,
+        "public_slug": row["public_slug"],
+        "public_url": f"/u/{row['public_slug'] or row['username']}"
+                      if row["public_enabled"] else None,
     }
 
 

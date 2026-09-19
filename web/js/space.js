@@ -67,10 +67,8 @@ export function appCard(item, opts = {}) {
     fav.append(icon('link', 16, 'fallback'));
   }
 
-  const meta = h('div', { class: 'pubmeta' },
-    h('span', { class: 'pubhost', text: hostOf(item.url) }),
-    ...(item.tags || []).map((t) => h('span', { class: 'tag', text: t })),
-    ...badges.filter(Boolean));
+  // 不显示域名（标题本身就是超链接）、也不显示标签（标签已没有入口，界面统一不展示）
+  const meta = h('div', { class: 'pubmeta' }, ...badges.filter(Boolean));
 
   const title = h('div', { class: 'pubtitle' },
     h('a', { href: item.url, target: '_blank', rel: 'noopener noreferrer' },

@@ -8,12 +8,16 @@ CREATE TABLE IF NOT EXISTS users (
   display_name   TEXT NOT NULL DEFAULT '',
   avatar         TEXT NOT NULL DEFAULT '',
   public_enabled INTEGER NOT NULL DEFAULT 0,
+  -- 对外公开页地址。NULL = 用 /u/<用户名>；设了就优先用它
+  public_slug    TEXT,
   -- GitCode 登录：存对方的用户 id（字符串）。NULL = 没绑定
   gitcode_id     TEXT,
   created_at     TEXT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_gitcode
   ON users(gitcode_id) WHERE gitcode_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_public_slug
+  ON users(public_slug) WHERE public_slug IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS sessions (
   token      TEXT PRIMARY KEY,

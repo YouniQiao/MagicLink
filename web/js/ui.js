@@ -33,7 +33,6 @@ export function clear(el) { while (el.firstChild) el.removeChild(el.firstChild);
 // 节点或字符串，`null` 会变成一个内容为 "null" 的文本节点（`undefined` 同理），
 // 于是页面上凭空多出一个孤零零的 null。踩过两次，都是「这个元素该不该渲染」
 // 的三元表达式返回了 null：
-//   · 公开页没有标签时，筛选条 tagbar 是 null
 //   · 空间列表只有一页时，分页器 pager() 返回 null
 // 这两处首屏都看不出来（首屏走 h()，h() 会过滤），只有刷新列表时才冒出来。
 // 这里和 h() 的 kids 用同一套规则：null / undefined / false 一律跳过。
