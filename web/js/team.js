@@ -1,6 +1,15 @@
 import { api } from './api.js';
 import {
-  h, icon, toastOk, toastErr, modal, confirmDialog, initials, fmtDate, debounce,
+  h,
+  icon,
+  toastOk,
+  toastErr,
+  modal,
+  confirmDialog,
+  initials,
+  fmtDate,
+  debounce,
+  setChildren,
 } from './ui.js';
 import { state, layout, go, loadMe, loadGroups } from './app.js';
 import { linkCard, pager, openLinkForm } from './personal.js';
@@ -25,7 +34,7 @@ function openTeamSettings(team) {
     pubBtn.className = pubOn ? 'btn' : 'btn primary';
     if (pubOn) {
       const url = `${location.origin}${team.public_url || `/t/team-${team.id}`}`;
-      pubState.replaceChildren(
+      setChildren(pubState, 
         h('span', { class: 'codechip', text: url }), ' ',
         h('a', { class: 'btn sm', href: url, target: '_blank', rel: 'noopener' },
           '打开', icon('external')));
@@ -211,7 +220,7 @@ export async function renderTeamSpace(teamId, q) {
   async function refresh() {
     current = await api.get(`/api/teams/${teamId}/links`, params);
     const holder = document.getElementById('team-list');
-    holder.replaceChildren(buildList(current), pager(current, (p) => setParam({ page: p })));
+    setChildren(holder, buildList(current), pager(current, (p) => setParam({ page: p })));
   }
 
   function newTeamLink() {

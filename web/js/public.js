@@ -1,7 +1,15 @@
 // 对外公开页：独立运行，不依赖主应用、不需要登录。
 // 数据来自 /api/public/*，只有勾了「对外公开」的链接会出现在这里。
-import { h, icon, hostOf, debounce,
-         brand, accountArea, currentUser } from './ui.js';
+import {
+  h,
+  icon,
+  hostOf,
+  debounce,
+  brand,
+  accountArea,
+  currentUser,
+  setChildren,
+} from './ui.js';
 
 const app = document.getElementById('app');
 
@@ -67,7 +75,7 @@ function render(data, user) {
 
     const shown = groups.reduce((n, g) => n + g.links.length, 0);
 
-    list.replaceChildren(
+    setChildren(list, 
       groups.length
         ? h('div', null, ...groups.map((g) => h('section', { class: 'pubgroup' },
             h('div', { class: 'pubgrouphead' },
@@ -114,7 +122,7 @@ function render(data, user) {
     });
   }
 
-  app.replaceChildren(
+  setChildren(app, 
     h('header', { class: 'pubhead' },
       h('div', { class: 'pubheadtop' },
         brand({ title: '返回链接广场' }), accountArea(user)),
@@ -134,7 +142,7 @@ function render(data, user) {
 }
 
 function renderError(msg, user) {
-  app.replaceChildren(
+  setChildren(app, 
     h('div', { class: 'pubhead' },
       h('div', { class: 'pubheadtop' },
         brand({ title: '返回链接广场' }), accountArea(user))),

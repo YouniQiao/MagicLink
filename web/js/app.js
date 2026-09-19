@@ -1,6 +1,13 @@
 import { api, onUnauthorized, ApiError } from './api.js';
 import {
-  h, clear, icon, toastOk, toastErr, modal, accountArea,
+  h,
+  clear,
+  icon,
+  toastOk,
+  toastErr,
+  modal,
+  accountArea,
+  setChildren,
 } from './ui.js';
 import { renderPersonalSpace } from './personal.js';
 import { renderTeamSpace } from './team.js';
@@ -190,7 +197,7 @@ function loginView(mode = 'login') {
   const oauthBox = h('div', { class: 'oauthbox' });
   api.get('/api/auth/gitcode/status').then((d) => {
     if (!d || !d.enabled) return;
-    oauthBox.replaceChildren(
+    setChildren(oauthBox, 
       h('div', { class: 'orline' }, h('span', { text: '或' })),
       h('a', { class: 'btn oauth', href: '/api/auth/gitcode/start' },
         icon('gitbranch'), '使用 GitCode 登录'),

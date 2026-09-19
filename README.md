@@ -387,6 +387,27 @@ POST             /api/auth/gitcode/unbind
 - `test_team_perms.py` — 团队链接权限矩阵（拥有者/成员/非成员 × 自己的/别人的/共享的；每格同时断言 `can_edit`/`can_remove` 标志与接口实际状态码一致）
 - `test_gitcode.py` — GitCode 登录全链路（本地起假 GitCode，真实跑完授权跳转→回调→换 token→建号/绑定）
 - `test_concurrency.py` — 并发回归（FastAPI 把同步端点丢线程池，SQLite 连接跨线程会 500）
+- `test_frontend_static.py` — 前端源码静态检查（不起服务直接读 `web/`，见下面「前端两条硬规矩」）
+
+### 前端两条硬规矩
+
+这两条都是踩过坑之后钉下来的，`test_frontend_static.py` 会在源码层面挡住：
+
+**① 不许用原生 `replaceChildren`，要用 `setChildren(el, …)`**
+
+`replaceChildren` 按 WebIDL 规则把每个参数转成节点或字符串，`null` 会变成一个
+内容为 `"null"` 的文本节点——页面上就凭空多出一个孤零零的 null。
+偏偏它专挑「这个元素该不该渲染」的三元表达式下手，而且两个已知场景**首屏都看不出来**
+（首屏走 `h()`，`h()` 会过滤 null），只有刷新列表时才冒出来：
+
+- 公开页的空间**一条标签都没有**时，筛选条 `tagbar` 是 `null` → 公开页顶栏下面多一个 null
+- 空间列表**只有一页**时，分页器 `pager()` 返回 `null` → 每次新建/编辑/删除后列表下面多一个 null
+
+`setChildren` 和 `h()` 用同一套规则：`null` / `undefined` / `false` 一律跳过。
+
+**② 每个 `fetch` 都要带 `credentials`**
+
+不带的话会话 cookie 不会发出去，表现为「刚登录完又是未登录」。
 
 ## 部署（暂未执行）
 

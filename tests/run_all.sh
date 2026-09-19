@@ -18,6 +18,14 @@ trap cleanup EXIT
 echo "· 临时库：$TMPDB"
 MAGICLINK_DB="$TMPDB" .venv/bin/python manage.py init >/dev/null
 
+# 前端静态检查不需要起服务，先跑——省得白等一遍启动
+rc=0
+echo
+echo "════════════════════════════════════════════"
+echo "  test_frontend_static"
+echo "════════════════════════════════════════════"
+.venv/bin/python tests/test_frontend_static.py || rc=1
+
 MAGICLINK_DB="$TMPDB" .venv/bin/python -m uvicorn app.main:app \
   --host 127.0.0.1 --port "$PORT" > "$LOG" 2>&1 &
 SRV_PID=$!
@@ -28,7 +36,6 @@ for _ in $(seq 1 40); do
 done
 curl -sf "${BASE}/api/health" >/dev/null || { echo "服务启动失败："; cat "$LOG"; exit 1; }
 
-rc=0
 for t in test_api test_contract test_reorder test_team_perms test_public test_gitcode test_concurrency; do
   echo
   echo "════════════════════════════════════════════"

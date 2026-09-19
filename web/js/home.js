@@ -1,7 +1,14 @@
 // 首页：链接广场。
 // 列出所有开启「对外公开」的团队空间和个人空间，访客挑一个进去看，不需要登录。
 // 顶栏会读当前会话：已登录显示用户名（点了进 /app），未登录显示「登录」。
-import { h, icon, brand, accountArea, currentUser } from './ui.js';
+import {
+  h,
+  icon,
+  brand,
+  accountArea,
+  currentUser,
+  setChildren,
+} from './ui.js';
 
 const app = document.getElementById('app');
 
@@ -43,7 +50,7 @@ function render(d, user) {
         h('div', { text: '登录后在「设置」里开启自己的公开页，或由团队拥有者开启团队公开页。' }),
         h('a', { class: 'btn primary', href: '/app' }, '进入 MagicLink'));
 
-  app.replaceChildren(
+  setChildren(app, 
     h('header', { class: 'pubhead' },
       h('div', { class: 'pubheadtop' }, brand({ title: '链接广场' }), accountArea(user)),
       h('h1', { class: 'pubname', text: '链接广场' }),
@@ -58,7 +65,7 @@ function render(d, user) {
 }
 
 function renderError(msg, user) {
-  app.replaceChildren(
+  setChildren(app, 
     h('div', { class: 'pubhead' },
       h('div', { class: 'pubheadtop' }, brand({ title: '链接广场' }), accountArea(user))),
     h('div', { class: 'empty' },

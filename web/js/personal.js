@@ -1,6 +1,14 @@
 import { api } from './api.js';
 import {
-  h, icon, toastOk, toastErr, modal, confirmDialog, hostOf, debounce,
+  h,
+  icon,
+  toastOk,
+  toastErr,
+  modal,
+  confirmDialog,
+  hostOf,
+  debounce,
+  setChildren,
 } from './ui.js';
 import { state, layout, go, loadGroups, loadMe, promptNewGroup } from './app.js';
 import { appCard, buildSpace } from './space.js';
@@ -110,11 +118,11 @@ export async function openLinkForm({ title, link = null, groups = [], groupId = 
     function paintPubState() {
       if (state.me?.public_enabled) {
         const u = `${location.origin}/u/${state.me.username}`;
-        pubState.replaceChildren('你的公开页已开启：',
+        setChildren(pubState, '你的公开页已开启：',
           h('a', { href: u, target: '_blank', rel: 'noopener' }, u));
       } else {
         // 总开关没开时勾了也不会出现——当场说出来，别让它静默失败
-        pubState.replaceChildren(
+        setChildren(pubState, 
           h('span', { style: { color: 'var(--warn)' },
             text: '你的公开页还没开启，勾了也不会出现。' }), ' ',
           h('button', {
@@ -334,7 +342,7 @@ export async function renderPersonalSpace(q) {
   async function refresh() {
     current = await api.get('/api/local/links', params);
     const holder = document.getElementById('space-list');
-    holder.replaceChildren(buildList(current), pager(current, (p) => setParam({ page: p })));
+    setChildren(holder, buildList(current), pager(current, (p) => setParam({ page: p })));
   }
 
   const searchIn = h('input', {

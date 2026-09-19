@@ -29,6 +29,20 @@ export function append(el, kids) {
 
 export function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
 
+// 设置子节点。**别用原生的 replaceChildren**：它按 WebIDL 规则把每个参数转成
+// 节点或字符串，`null` 会变成一个内容为 "null" 的文本节点（`undefined` 同理），
+// 于是页面上凭空多出一个孤零零的 null。踩过两次，都是「这个元素该不该渲染」
+// 的三元表达式返回了 null：
+//   · 公开页没有标签时，筛选条 tagbar 是 null
+//   · 空间列表只有一页时，分页器 pager() 返回 null
+// 这两处首屏都看不出来（首屏走 h()，h() 会过滤），只有刷新列表时才冒出来。
+// 这里和 h() 的 kids 用同一套规则：null / undefined / false 一律跳过。
+export function setChildren(el, ...kids) {
+  clear(el);
+  append(el, kids);
+  return el;
+}
+
 // ── 图标（stroke 风格，16px）────────────────────────────────────────────────
 const PATHS = {
   user:     '<circle cx="8" cy="5.6" r="2.6"/><path d="M3.2 13.4c0-2.5 2.1-3.9 4.8-3.9s4.8 1.4 4.8 3.9"/>',
