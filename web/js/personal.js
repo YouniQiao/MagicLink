@@ -9,6 +9,7 @@ import {
   hostOf,
   debounce,
   setChildren,
+  copyText,
 } from './ui.js';
 import { state, layout, go, loadGroups, loadMe, promptNewGroup, publicLink } from './app.js';
 import { appCard, buildSpace } from './space.js';
@@ -253,8 +254,8 @@ export function linkCard(item, { onEdit, onDelete, editable = true,
 }
 
 async function copyUrl(item) {
-  try { await navigator.clipboard.writeText(item.url); toastOk('链接已复制'); }
-  catch { toastErr('复制失败'); }
+  const ok = await copyText(item.url);
+  ok ? toastOk('链接已复制') : toastErr('复制失败');
 }
 
 export function pager(d, onGo) {

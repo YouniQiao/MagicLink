@@ -101,6 +101,42 @@ export function toast(message, type = '') {
 export const toastOk  = (m) => toast(m, 'ok');
 export const toastErr = (m) => toast(m, 'err');
 
+// ── 复制文本到剪贴板 ────────────────────────────────────────────────────────
+//
+// ⚠️ `navigator.clipboard` 只在**安全上下文**下存在：HTTPS，或者 localhost / 127.0.0.1。
+// 内网部署常见的 `http://<内网IP>:3030`、`http://<内部域名>/` 都不算安全上下文 ——
+// 那时 `navigator.clipboard` 是 `undefined`，直接调会抛 TypeError，
+// 表现成「凡是带复制的地方全都失灵」（邀请码、备注、链接地址、公开页地址）。
+//
+// 所以留一条兜底：临时 textarea + `document.execCommand('copy')`。
+// execCommand 已被标记为废弃，但在非安全上下文里它是唯一还能用的办法，
+// 各家浏览器目前都还支持。必须在用户手势（点击）里调用，四个调用点都是。
+//
+// 返回是否成功，调用方据此给反馈 —— 别再不问结果就报「已复制」。
+export async function copyText(text) {
+  if (window.isSecureContext && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch { /* 权限被拒之类，继续走兜底 */ }
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    // 挪到视口外：既不参与布局，也不会在移动端弹出键盘
+    ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0;';
+    document.body.append(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);   // iOS Safari 需要这句才选得中
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── 模态框 ──────────────────────────────────────────────────────────────────
 export function modal({ title, sub, body, actions, width }) {
   const root = document.getElementById('modal-root');

@@ -8,6 +8,7 @@ import {
   accountArea,
   currentUser,
   setChildren,
+  copyText,
 } from './ui.js';
 
 const app = document.getElementById('app');
@@ -60,12 +61,9 @@ function linkCard(it) {
   }
 
   async function copyNote() {
-    try {
-      await navigator.clipboard.writeText(it.description);
-      flash(true);
-    } catch {
-      flash(false);   // 非安全上下文（纯 http 的非 localhost）下会走到这里
-    }
+    // copyText 里自带非安全上下文的兜底（内网 http 部署时
+      // navigator.clipboard 是 undefined），这里只按结果给反馈
+      flash(await copyText(it.description));
   }
 
   if (it.description) {
@@ -91,6 +89,20 @@ function linkCard(it) {
       // 没有备注可复制时（也就没有按钮）整行不渲染，免得留一条空行
       copyBtn ? h('div', { class: 'pubmeta' }, copyBtn) : null),
   );
+}
+
+// 顶栏左边：品牌 + 一个**看得见**的「回链接广场」入口。
+// 品牌的 tooltip 里一直写着「返回链接广场」，但那是悬停才出现的、等于没有 ——
+// 用户明确要求加一个看得见的。正常页和出错页都用它，别再各写一遍。
+// 注意要包一层：.pubheadtop 是 space-between，直接塞第三个同级节点会把
+// 品牌、链接、账号三样摊开（问号飞中间那次就是这么来的）。
+function headLeft() {
+  return h('div', { class: 'headleft' },
+    brand({ title: '返回链接广场' }),
+    // 窄屏（≤560px）CSS 会把文字收成 0 号字、只留箭头 ——
+    // 所以给个 title，鼠标停上去还能看出这是回哪儿
+    h('a', { class: 'backlink', href: '/', title: '回链接广场' },
+      icon('arrowl', 14), '链接广场'));
 }
 
 function render(data, user) {
@@ -138,8 +150,7 @@ function render(data, user) {
   const counter = h('span', { class: 'small muted pubcount' });
   setChildren(app, 
     h('header', { class: 'pubhead' },
-      h('div', { class: 'pubheadtop' },
-        brand({ title: '返回链接广场' }), accountArea(user)),
+      h('div', { class: 'pubheadtop' }, headLeft(), accountArea(user)),
       h('h1', { class: 'pubname', text: data.name }),
       h('p', { class: 'pubsub', text: data.kind === 'team'
         ? `团队公开链接${data.owner_name ? ` · 由 ${data.owner_name} 维护` : ''} · 只读展示`
@@ -157,8 +168,7 @@ function render(data, user) {
 function renderError(msg, user) {
   setChildren(app, 
     h('div', { class: 'pubhead' },
-      h('div', { class: 'pubheadtop' },
-        brand({ title: '返回链接广场' }), accountArea(user))),
+      h('div', { class: 'pubheadtop' }, headLeft(), accountArea(user))),
     h('div', { class: 'empty' },
       h('div', { class: 't', text: '打不开这个公开页' }),
       h('div', { text: msg })),

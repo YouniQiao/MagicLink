@@ -505,6 +505,24 @@ button.pill:hover { border-color: var(--line-strong); }
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; margin-bottom: 22px;
 }
+/* 公开页顶栏左边一组：品牌 + 「回链接广场」。
+   包一层是因为 .pubheadtop 是 space-between —— 不包的话品牌、链接、账号
+   三个会被摊开（问号那次踩过一模一样的坑）。 */
+.headleft { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.backlink {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--muted); font-size: 12.5px; flex: 0 0 auto;
+  transition: color .15s;
+}
+.backlink:hover { color: var(--accent); }
+.backlink .ico { flex: 0 0 auto; }
+@media (max-width: 560px) {
+  /* 窄屏先把这行字收掉，只留箭头，别把品牌挤掉 */
+  .headleft { gap: 10px; }
+  .backlink { font-size: 0; gap: 0; }
+  .backlink .ico { width: 15px; height: 15px; }
+}
+
 /* 公开页顶栏只有品牌 + 账号区，写法与首页完全一致（见 .pubheadtop）。 */
 .pubname {
   font-size: 27px; font-weight: 680; letter-spacing: -.4px;

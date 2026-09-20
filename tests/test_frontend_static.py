@@ -16,6 +16,12 @@
 
 3. 所有 `fetch(` 都要带 `credentials`，否则接口的会话 cookie 不会带上，
    表现为「刚登录完又是未登录」。
+
+4. 业务代码里不许裸用 `navigator.clipboard`，一律走 ui.js 的 `copyText()`。
+   剪贴板 API 只在**安全上下文**下存在（HTTPS 或 localhost/127.0.0.1）——
+   内网常见的 `http://<内网IP>:3030`、`http://<内部域名>/` 都不算，
+   那时 `navigator.clipboard` 是 undefined，直接调会抛 TypeError，
+   表现成「凡是带复制的地方全都失灵」。`copyText()` 里带 execCommand 兜底。
 """
 from __future__ import annotations
 
@@ -91,6 +97,19 @@ def main():
                 line_no = src[:m.start()].count("\n") + 1
                 no_cred.append(f"{f.relative_to(ROOT)}:{line_no}: {seg.splitlines()[0][:60]}")
     check("每个 fetch 都带 credentials", not no_cred, "\n        ".join([""] + no_cred))
+
+    print()
+    print("── 规则 4：剪贴板一律走 copyText（非安全上下文下 navigator.clipboard 不存在）──")
+    check("ui.js 里有 copyText 封装", "export async function copyText" in ui)
+    clip = []
+    for f, src in sources.items():
+        if f.name == "ui.js":
+            continue          # 封装自己当然要用
+        for i, line in enumerate(src.splitlines(), 1):
+            if "navigator.clipboard" in line:
+                clip.append(f"{f.relative_to(ROOT)}:{i}: {line.strip()[:70]}")
+    check("业务代码里没有裸用 navigator.clipboard", not clip,
+          "\n        ".join([""] + clip))
 
     print()
     print("=" * 46)

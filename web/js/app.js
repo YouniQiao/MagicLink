@@ -8,6 +8,7 @@ import {
   modal,
   accountArea,
   setChildren,
+  copyText,
 } from './ui.js';
 import { renderPersonalSpace } from './personal.js';
 import { renderTeamSpace } from './team.js';
@@ -352,8 +353,8 @@ async function settingsView() {
               h('button', {
                 class: 'btn sm',
                 onclick: async () => {
-                  try { await navigator.clipboard.writeText(url); toastOk('地址已复制'); }
-                  catch { toastErr('复制失败'); }
+                  const ok = await copyText(url);
+                      ok ? toastOk('地址已复制') : toastErr('复制失败');
                 },
               }, '复制'),
               h('a', { class: 'btn sm', href: url, target: '_blank', rel: 'noopener' },

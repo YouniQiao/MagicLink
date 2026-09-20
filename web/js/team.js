@@ -10,6 +10,7 @@ import {
   fmtDate,
   debounce,
   setChildren,
+  copyText,
 } from './ui.js';
 import { state, layout, go, loadMe, loadGroups, publicLink } from './app.js';
 import { linkCard, pager, openLinkForm } from './personal.js';
@@ -69,8 +70,8 @@ function openTeamSettings(team) {
           h('button', {
             class: 'btn sm',
             onclick: async () => {
-              try { await navigator.clipboard.writeText(codeBox.textContent); toastOk('邀请码已复制'); }
-              catch { toastErr('复制失败'); }
+              const ok = await copyText(codeBox.textContent);
+                  ok ? toastOk('邀请码已复制') : toastErr('复制失败');
             },
           }, '复制'),
           h('button', {
