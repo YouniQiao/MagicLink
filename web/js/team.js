@@ -413,6 +413,34 @@ export async function renderTeamSpace(teamId, q) {
 
   const headActions = [
     ...actions,
+    // 重命名 / 删除分组。顺序跟个人空间那边一致（先重命名、后删除）。
+    activeGroup ? h('button', {
+      class: 'btn sm',
+      onclick: () => {
+        const nameIn = h('input', { class: 'input', value: activeGroup.name });
+        const m = modal({
+          title: '重命名分组',
+          body: h('div', { class: 'field' }, h('label', { text: '名称' }), nameIn),
+          actions: [
+            h('button', { class: 'btn', text: '取消', onclick: () => m.close() }),
+            h('button', {
+              class: 'btn primary', text: '保存',
+              onclick: async () => {
+                // 后端不拦空名字（传空白会真的把组名写成空），这里拦一道
+                const name = nameIn.value.trim();
+                if (!name) return toastErr('请填写分组名称');
+                try {
+                  await api.patch(`/api/teams/${teamId}/groups/${activeGroup.id}`, { name });
+                  m.close(); toastOk('分组已重命名');
+                  // 回到同一个分组：渲染时会重新拉一次团队分组，新名字就生效了
+                  go(`/team/${teamId}?g=${activeGroup.id}`);
+                } catch (e) { toastErr(e.message); }
+              },
+            }),
+          ],
+        });
+      },
+    }, '重命名分组') : null,
     activeGroup ? h('button', {
       class: 'btn sm danger',
       onclick: () => confirmDialog({

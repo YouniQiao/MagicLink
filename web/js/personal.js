@@ -399,9 +399,11 @@ export async function renderPersonalSpace(q) {
             h('button', {
               class: 'btn primary', text: '保存',
               onclick: async () => {
+                // 后端不拦空名字（传空白会真的把组名写成空），这里拦一道
+                const name = nameIn.value.trim();
+                if (!name) return toastErr('请填写分组名称');
                 try {
-                  await api.patch(`/api/local/groups/${activeGroup.id}`,
-                                  { name: nameIn.value.trim() });
+                  await api.patch(`/api/local/groups/${activeGroup.id}`, { name });
                   m.close(); await loadGroups(); go(`/space?g=${activeGroup.id}`);
                 } catch (e) { toastErr(e.message); }
               },
