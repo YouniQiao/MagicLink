@@ -35,10 +35,18 @@ async function load(target) {
 }
 
 function linkCard(it) {
+  // 图标加载失败要换成通用链接图标，不能把 img 藏掉 —— .favbox 是个带底色描边的
+  // 34×34 方框，藏了里面的图、框还在，就是一个空框（内网拉不到外站 favicon 时
+  // 就会这样：抓取时存下了地址，访问时加载不出来）。
+  // 管理界面的 appCard 一直是这么做的，这里之前漏了，两处行为才不一致。
   const fav = it.favicon
     ? h('img', { src: it.favicon, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer',
-                 onerror: (e) => { e.target.style.display = 'none'; } })
-    : icon('link');
+                 onerror: (e) => {
+                   const box = e.target.parentNode;
+                   e.target.remove();
+                   if (box) box.append(icon('link', 16, 'fallback'));
+                 } })
+    : icon('link', 16, 'fallback');
 
   // 「复制备注」按钮。整张卡是一个 <a>，所以这里有两个坎：
   //   1. 必须自己掐断事件（preventDefault + stopPropagation），否则点它会顺带打开链接；
